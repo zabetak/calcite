@@ -115,6 +115,9 @@ public abstract class QuidemTest {
     final List<String> paths = new ArrayList<>();
     final FilenameFilter filter = new PatternFilenameFilter(".*\\.iq$");
     for (File f : Util.first(dir.listFiles(filter), new File[0])) {
+      if (!Bug.CALCITE_2582_FIXED && f.getAbsolutePath().contains("sub-query.iq")) {
+        continue;
+      }
       paths.add(f.getAbsolutePath().substring(commonPrefixLength));
     }
     return Lists.transform(paths, path -> new Object[] {path});

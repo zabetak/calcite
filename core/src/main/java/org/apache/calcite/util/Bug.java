@@ -179,6 +179,13 @@ public abstract class Bug {
   public static final boolean CALCITE_2539_FIXED = false;
 
   /**
+   * Whether
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-2582">[CALCITE-2582]
+   * FilterProjectTransposeRule does not always simplify the new filter condition</a> is fixed.
+   */
+  public static final boolean CALCITE_2582_FIXED = false;
+
+  /**
    * Use this to flag temporary code.
    */
   public static final boolean TODO_FIXED = false;
