@@ -16,8 +16,10 @@
  */
 package org.apache.calcite.runtime;
 
+import java.text.Collator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -193,6 +195,9 @@ public class Utilities {
 
   public static int compare(Comparable v0, Comparable v1) {
     //noinspection unchecked
+    if (v0 instanceof String) {
+      return Collator.getInstance(Locale.ROOT).compare(v0, v1);
+    }
     return v0.compareTo(v1);
   }
 
@@ -201,7 +206,7 @@ public class Utilities {
     return v0 == v1 ? 0
         : v0 == null ? -1
             : v1 == null ? 1
-                : v0.compareTo(v1);
+                : Utilities.compare(v0, v1);
   }
 
   public static int compareNullsLast(Comparable v0, Comparable v1) {
@@ -209,7 +214,7 @@ public class Utilities {
     return v0 == v1 ? 0
         : v0 == null ? 1
             : v1 == null ? -1
-                : v0.compareTo(v1);
+                : Utilities.compare(v0, v1);
   }
 
   public static int compareNullsLast(List v0, List v1) {

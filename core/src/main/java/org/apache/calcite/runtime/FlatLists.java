@@ -21,12 +21,14 @@ import org.apache.calcite.util.ImmutableNullableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import java.text.Collator;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
@@ -1345,6 +1347,9 @@ public class FlatLists {
       }
       if (b == null) {
         return 1;
+      }
+      if (a instanceof String && b instanceof String) {
+        return Collator.getInstance(Locale.ROOT).compare(a, b);
       }
       return a.compareTo(b);
     }

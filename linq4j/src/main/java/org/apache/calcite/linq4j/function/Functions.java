@@ -19,6 +19,7 @@ package org.apache.calcite.linq4j.function;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.text.Collator;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
@@ -523,7 +525,11 @@ public abstract class Functions {
         return 1;
       }
       //noinspection unchecked
-      return o1.compareTo(o2);
+      if (areStrings(o1, o2)) {
+        return Collator.getInstance(Locale.ROOT).compare(o1, o2);
+      } else {
+        return o1.compareTo(o2);
+      }
     }
   }
 
@@ -541,7 +547,11 @@ public abstract class Functions {
         return -1;
       }
       //noinspection unchecked
-      return o1.compareTo(o2);
+      if (areStrings(o1, o2)) {
+        return Collator.getInstance(Locale.ROOT).compare(o1, o2);
+      } else {
+        return o1.compareTo(o2);
+      }
     }
   }
 
@@ -559,7 +569,11 @@ public abstract class Functions {
         return 1;
       }
       //noinspection unchecked
-      return -o1.compareTo(o2);
+      if (areStrings(o1, o2)) {
+        return -Collator.getInstance(Locale.ROOT).compare(o1, o2);
+      } else {
+        return -o1.compareTo(o2);
+      }
     }
   }
 
@@ -577,8 +591,16 @@ public abstract class Functions {
         return -1;
       }
       //noinspection unchecked
-      return -o1.compareTo(o2);
+      if (areStrings(o1, o2)) {
+        return -Collator.getInstance(Locale.ROOT).compare(o1, o2);
+      } else {
+        return -o1.compareTo(o2);
+      }
     }
+  }
+
+  private static boolean areStrings(Comparable o1, Comparable o2) {
+    return o1 instanceof String && o2 instanceof String;
   }
 
   /** Ignore.
