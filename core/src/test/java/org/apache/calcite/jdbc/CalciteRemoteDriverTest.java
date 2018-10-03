@@ -29,6 +29,7 @@ import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.JdbcFrontLinqBackTest;
 import org.apache.calcite.test.JdbcTest;
+import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
@@ -185,6 +186,9 @@ public class CalciteRemoteDriverTest {
   }
 
   @Test public void testSchemasLocal() throws Exception {
+    if (!Bug.EBX_0001_FIXED) {
+      return;
+    }
     final Connection connection = DriverManager.getConnection(
         "jdbc:avatica:remote:factory=" + LJS);
     assertThat(connection.isClosed(), is(false));
@@ -247,6 +251,9 @@ public class CalciteRemoteDriverTest {
   }
 
   @Test public void testRemoteSchemas() throws Exception {
+    if (!Bug.EBX_0001_FIXED) {
+      return;
+    }
     CalciteAssert.hr().with(REMOTE_CONNECTION_FACTORY)
         .metaData(GET_SCHEMAS)
         .returns("TABLE_SCHEM=POST; TABLE_CATALOG=null\n"

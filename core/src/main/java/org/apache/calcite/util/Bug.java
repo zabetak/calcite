@@ -185,6 +185,13 @@ public abstract class Bug {
    */
   public static final boolean CALCITE_2582_FIXED = false;
 
+  // zabetak
+
+  /**
+   * Test of queries on metadata should not expect a particular order.
+   */
+  public static final boolean EBX_0001_FIXED = false;
+
   /**
    * Use this to flag temporary code.
    */
