@@ -5698,7 +5698,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + " INTEGER DEPTNO,"
             + " BOOLEAN SLACKER,"
             + " INTEGER DEPTNO0,"
-            + " VARCHAR(10) NAME) NOT NULL");
+            + " VARCHAR(10) NAME)");
   }
 
   // todo: Cannot handle '(a join b)' yet -- we see the '(' and expect to
@@ -7096,7 +7096,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test public void testAggregateFilter() {
     sql("select sum(empno) filter (where deptno < 10) as s from emp")
-        .type("RecordType(INTEGER S) NOT NULL");
+        .type("RecordType(INTEGER S)");
   }
 
   @Test public void testAggregateFilterNotBoolean() {
@@ -7938,10 +7938,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .type("RecordType(VARCHAR(10) NOT NULL NAME, VARCHAR(10) ENAME) NOT NULL");
     sql("SELECT dept_nested.employees[1].detail.skills[1].desc as DESCRIPTION\n"
         + "from dept_nested")
-        .type("RecordType(VARCHAR(20) DESCRIPTION) NOT NULL");
+        .type("RecordType(VARCHAR(20) DESCRIPTION)");
     sql("SELECT dept_nested.employees[1].detail.skills[1].others.a as oa\n"
         + "from dept_nested")
-        .type("RecordType(VARCHAR(10) OA) NOT NULL");
+        .type("RecordType(VARCHAR(10) OA)");
   }
 
   /** Test case for
@@ -9755,7 +9755,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // Resolve F1.C0 as fully qualified column F1.C0 (as evidenced by "INTEGER"
     // rather than "INTEGER NOT NULL")
     sql("select f1.c0 from struct." + table)
-        .type("RecordType(INTEGER C0) NOT NULL");
+        .type("RecordType(INTEGER C0)");
 
     // Fail ambiguous column reference A0, since F1.A0 and F2.A0 both exist with
     // the same resolving priority.
