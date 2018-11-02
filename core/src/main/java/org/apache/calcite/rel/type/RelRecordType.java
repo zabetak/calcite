@@ -53,7 +53,13 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
   }
 
   @Override public boolean isNullable() {
-    return false;
+    // [CALCITE-2464] RelRecordType nullable if all its fields are nullable
+    for (RelDataTypeField field : getFieldList()) {
+      if (!field.getType().isNullable()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override public int getPrecision() {
