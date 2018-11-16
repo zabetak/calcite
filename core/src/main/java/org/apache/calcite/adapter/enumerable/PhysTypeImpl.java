@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static org.apache.calcite.adapter.enumerable.EnumUtils.javaRowClass;
 import static org.apache.calcite.adapter.enumerable.EnumUtils.overridingMethodDecl;
 
 /** Implementation of {@link PhysType}. */
@@ -70,7 +69,8 @@ public class PhysTypeImpl implements PhysType {
     this.javaRowClass = javaRowClass;
     this.format = format;
     for (RelDataTypeField field : rowType.getFieldList()) {
-      fieldClasses.add(javaRowClass(typeFactory, field.getType()));
+      Type fieldType = typeFactory.getJavaClass(field.getType());
+      fieldClasses.add(fieldType instanceof Class ? (Class) fieldType : Object[].class);
     }
   }
 
