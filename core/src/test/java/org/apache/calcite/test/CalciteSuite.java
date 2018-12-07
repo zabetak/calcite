@@ -36,6 +36,7 @@ import org.apache.calcite.rel.RelCollationTest;
 import org.apache.calcite.rel.RelDistributionTest;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverterTest;
 import org.apache.calcite.rel.rules.DateRangeRulesTest;
+import org.apache.calcite.rel.rules.SortRemoveRuleTest;
 import org.apache.calcite.rex.RexBuilderTest;
 import org.apache.calcite.rex.RexExecutorTest;
 import org.apache.calcite.runtime.BinarySearchTest;
@@ -180,6 +181,7 @@ import org.junit.runners.Suite;
     CoreQuidemTest.class,
     CalciteRemoteDriverTest.class,
     StreamTest.class,
+    SortRemoveRuleTest.class,
 
     // test cases
     TableInRootSchemaTest.class,
