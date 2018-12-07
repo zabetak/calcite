@@ -133,7 +133,7 @@ public class SqlValidatorDynamicTest extends SqlValidatorTestCase {
     final String sql = "select n.n_nation\n"
         + "from (select * from \"SALES\".NATION) as n,\n"
         + " (select * from \"SALES\".CUSTOMER)";
-    sql(sql).type("RecordType(ANY N_NATION) NOT NULL");
+    sql(sql).type("RecordType(ANY N_NATION)");
   }
 
   /** When resolve column reference, regular field has higher priority than
@@ -142,7 +142,7 @@ public class SqlValidatorDynamicTest extends SqlValidatorTestCase {
     final String sql = "select newid from (\n"
         + "  select *, NATION.N_NATION + 100 as newid\n"
         + "  from \"SALES\".NATION, \"SALES\".CUSTOMER)";
-    sql(sql).type("RecordType(ANY NEWID) NOT NULL");
+    sql(sql).type("RecordType(ANY NEWID)");
   }
 
 }
