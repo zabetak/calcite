@@ -30,6 +30,8 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.FieldDeclaration;
+import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -43,6 +45,9 @@ import org.apache.calcite.runtime.Typed;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.util.Util;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -50,8 +55,10 @@ import org.codehaus.commons.compiler.ICompilerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Relational expression that converts an enumerable input to interpretable
@@ -82,6 +89,16 @@ public class EnumerableInterpretable extends ConverterImpl
     return new EnumerableNode(enumerable, implementor.compiler, this);
   }
 
+  private static final int BINDABLE_CACHE_MAX_SIZE =
+      Util.getIntProperty("calcite.bindable.cache.maxSize", (size) -> size >= 0, 0);
+  private static final int BINDABLE_CACHE_CONCURRENCY_LEVEL =
+      Util.getIntProperty("calcite.bindable.cache.concurrencyLevel", (level) -> level > 0, 1);
+  private static final Cache<String, Bindable> BINDABLE_CACHE =
+      CacheBuilder.newBuilder()
+          .concurrencyLevel(BINDABLE_CACHE_CONCURRENCY_LEVEL)
+          .maximumSize(BINDABLE_CACHE_MAX_SIZE)
+          .build();
+
   public static Bindable toBindable(Map<String, Object> parameters,
       CalcitePrepare.SparkHandler spark, EnumerableRel rel,
       EnumerableRel.Prefer prefer) {
@@ -110,14 +127,8 @@ public class EnumerableInterpretable extends ConverterImpl
     }
   }
 
-  static ArrayBindable getArrayBindable(ClassDeclaration expr, String s,
-      int fieldCount) throws CompileException, IOException {
-    Bindable bindable = getBindable(expr, s, fieldCount);
-    return box(bindable);
-  }
-
   static Bindable getBindable(ClassDeclaration expr, String s, int fieldCount)
-      throws CompileException, IOException {
+      throws CompileException, IOException, ExecutionException {
     ICompilerFactory compilerFactory;
     try {
       compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
@@ -125,7 +136,7 @@ public class EnumerableInterpretable extends ConverterImpl
       throw new IllegalStateException(
           "Unable to instantiate java compiler", e);
     }
-    IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
+    final IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
     cbe.setClassName(expr.name);
     cbe.setExtendedClass(Utilities.class);
     cbe.setImplementedInterfaces(
@@ -137,7 +148,27 @@ public class EnumerableInterpretable extends ConverterImpl
       // Add line numbers to the generated janino class
       cbe.setDebuggingInformation(true, true, true);
     }
+
+    if (BINDABLE_CACHE_MAX_SIZE != 0) {
+      StaticFieldDetector detector = new StaticFieldDetector();
+      expr.accept(detector);
+      if (!detector.containsStaticField) {
+        return BINDABLE_CACHE.get(s, () -> (Bindable) cbe.createInstance(new StringReader(s)));
+      }
+    }
     return (Bindable) cbe.createInstance(new StringReader(s));
+  }
+
+  /**
+   * A visitor detecting if the Java AST contains static fields.
+   */
+  static class StaticFieldDetector extends VisitorImpl<Void> {
+    boolean containsStaticField = false;
+
+    @Override public Void visit(final FieldDeclaration fieldDeclaration) {
+      containsStaticField = (fieldDeclaration.modifier & Modifier.STATIC) != 0;
+      return containsStaticField ? null : super.visit(fieldDeclaration);
+    }
   }
 
   /** Converts a bindable over scalar values into an array bindable, with each

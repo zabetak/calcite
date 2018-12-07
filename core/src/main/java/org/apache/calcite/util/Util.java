@@ -95,6 +95,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -2320,6 +2321,27 @@ public class Util {
       builder.add(ImmutableList.copyOf(list));
     }
     return builder.build();
+  }
+
+  /**
+   * Returns the value of the system property with the specified name as int, or
+   * the <code>defaultValue</code> if any of the conditions below hold:
+   * (i) the property is not defined;
+   * (ii) the property value cannot be transformed to an int;
+   * (iii) the property value does not satisfy the checker.
+   */
+  public static int getIntProperty(String propertyName, IntPredicate checker, int defaultValue) {
+    final String v = System.getProperties().getProperty(propertyName);
+    if (v == null) {
+      return defaultValue;
+    }
+
+    try {
+      int vi = Integer.parseInt(v);
+      return checker.test(vi) ? vi : defaultValue;
+    } catch (NumberFormatException nfe) {
+      return defaultValue;
+    }
   }
 
   /** Creates a {@link PrintWriter} to a given output stream using UTF-8
