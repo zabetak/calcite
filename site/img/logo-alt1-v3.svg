@@ -10,12 +10,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="157mm"
+   height="63mm"
+   viewBox="0 0 157 63"
    version="1.1"
    id="svg8"
-   sodipodi:docname="logov3.svg"
+   sodipodi:docname="logo-alt1-v3.svg"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
   <defs
      id="defs2">
@@ -61,8 +61,8 @@
       <path
          inkscape:connector-curvature="0"
          transform="matrix(0.8,0,0,0.8,10,0)"
-         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
-         d="M 0,0 5,-5 -12.5,0 5,5 0,0 Z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt"
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
          id="path4448" />
     </marker>
     <linearGradient
@@ -75,10 +75,10 @@
     </linearGradient>
     <inkscape:perspective
        id="perspective3594"
-       inkscape:persp3d-origin="372.04726 : 350.78738 : 1"
-       inkscape:vp_z="744.09454 : 526.18108 : 1"
-       inkscape:vp_y="0 : 999.99998 : 0"
-       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.0474 : 350.78767 : 1"
+       inkscape:vp_z="744.09455 : 526.18122 : 1"
+       inkscape:vp_y="0 : 999.99991 : 0"
+       inkscape:vp_x="0 : 526.18123 : 1"
        sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
@@ -88,9 +88,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="516.73236"
-     inkscape:cy="859.97884"
+     inkscape:zoom="0.24748737"
+     inkscape:cx="389.23236"
+     inkscape:cy="1851.3182"
      inkscape:document-units="mm"
      inkscape:current-layer="layer4"
      showgrid="false"
@@ -98,10 +98,10 @@
      inkscape:snap-to-guides="false"
      inkscape:snap-page="false"
      inkscape:object-paths="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1017"
-     inkscape:window-x="1912"
-     inkscape:window-y="-8"
+     inkscape:window-width="2560"
+     inkscape:window-height="1395"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
      inkscape:window-maximized="1"
      inkscape:snap-others="false"
      inkscape:object-nodes="false" />
@@ -120,12 +120,13 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(0,-234)">
     <g
        id="g3802"
        transform="matrix(0.28222222,0,0,0.28222222,36.618264,27.105152)">
       <g
-         transform="translate(-121.20459,-70.624169)"
+         transform="translate(-220.98138,679.37584)"
          style="display:inline"
          inkscape:label="Crystal"
          id="layer2">
@@ -168,10 +169,10 @@
            inkscape:rounded="0"
            inkscape:randomized="0"
            d="m 101.30892,230.50234 -11.968477,-4.45393 -1.372133,12.69643 -6.305455,-11.1051 -9.212221,8.84403 2.307963,-12.56007 -12.741809,0.85343 9.841459,-8.13804 -10.309363,-7.53652 12.770028,0.0919 -3.053051,-12.40004 9.723358,8.27879 5.631817,-11.46144 2.127021,12.59197 11.681493,-5.15991 -6.46457,11.01324 12.26527,3.55599 -12.031319,4.28128 z"
-           transform="matrix(0.71534217,0,0,0.65524278,-63.137944,10.861223)" />
+           transform="matrix(0.71534217,0,0,0.65524278,-162.91473,760.86123)" />
       </g>
       <g
-         transform="translate(-121.20459,-70.624169)"
+         transform="translate(-220.98138,679.37584)"
          style="display:inline"
          id="layer1-4"
          inkscape:label="Calcite">
@@ -220,18 +221,18 @@
              id="tspan4207"
              sodipodi:role="line">TM</tspan></text>
         <path
-           style="fill:none;stroke:#800000;stroke-width:4.83661421;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+           style="fill:none;stroke:#800000;stroke-width:4.83661413;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            d="m 115.51419,222.9262 h 17.51984 l 160.04605,-61.55616 h 339.50595"
            id="path7619"
            inkscape:connector-curvature="0" />
         <path
-           style="fill:none;stroke:#800000;stroke-width:4.4822835;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+           style="fill:none;stroke:#800000;stroke-width:4.48228359;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            d="M 133.03403,222.9262 296.81198,117.56949 H 632.9727"
            id="path7621"
            inkscape:connector-curvature="0" />
       </g>
       <g
-         transform="translate(-121.20459,-70.624169)"
+         transform="translate(-220.98138,679.37584)"
          inkscape:label="Apache"
          id="layer3">
         <text
@@ -257,6 +258,6 @@
          id="tspan3804"
          x="66.282845"
          y="113.41962"
-         style="stroke-width:0.26458332"></tspan></text>
+         style="stroke-width:0.26458332" /></text>
   </g>
 </svg>
