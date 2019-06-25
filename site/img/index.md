@@ -1,11 +1,19 @@
-1.3 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt1-v3.svg]
+Candidate logos for Apache Calcite
 
-2.3 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt2-v3.svg]
+1
+![alt1-v3](logo-alt1-v3.svg)
 
-3.1 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt3-v1.svg]
+2
+![alt2-v3](logo-alt2-v3.svg)
 
-4.4 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt4-v4.svg]
+3
+![alt3-v1](logo-alt3-v1.svg)
 
-5.6 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt5-v6.svg]
+4
+![alt4-v4](logo-alt4-v4.svg)
 
-6.7 [https://github.com/zabetak/calcite/blob/calcite-logo/site/img/logo-alt6-v7.svg]
+5
+![alt5-v6](logo-alt5-v6.svg)
+
+6
+![alt6-v7](logo-alt6-v7.svg)
