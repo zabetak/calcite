@@ -38,6 +38,10 @@
 ![alt5-v5](logo-alt5-v5.svg)
 ## Candidate 5F
 ![alt5-v6](logo-alt5-v6.svg)
+## Candidate 5G
+![alt5-v6](logo-alt5-v7.svg)
+## Candidate 5H
+![alt5-v6](logo-alt5-v8.svg)
 
 ## Candidate 6A
 ![alt6-v1](logo-alt6-v1.svg)
