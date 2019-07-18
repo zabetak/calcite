@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.adapter.tpcds;
 
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
@@ -26,6 +25,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.test.SlowTests;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
@@ -37,6 +37,7 @@ import net.hydromatic.tpcds.query.Query;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.List;
 import java.util.Random;
@@ -44,8 +45,9 @@ import java.util.function.Consumer;
 
 /** Unit test for {@link org.apache.calcite.adapter.tpcds.TpcdsSchema}.
  *
- * <p>Only runs if {@link org.apache.calcite.config.CalciteSystemProperty#TEST_SLOW} is set.</p>
+ * <p>Only runs as part of slow test suite.</p>
  */
+@Category(SlowTests.class)
 public class TpcdsTest {
   private static Consumer<Holder<Program>> handler(
       final boolean bushy, final int minJoinCount) {
@@ -79,8 +81,7 @@ public class TpcdsTest {
       + "}";
 
   private CalciteAssert.AssertThat with() {
-    return CalciteAssert.model(TPCDS_MODEL)
-        .enable(CalciteSystemProperty.TEST_SLOW.value());
+    return CalciteAssert.model(TPCDS_MODEL);
   }
 
   @Test public void testCallCenter() {

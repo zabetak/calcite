@@ -105,6 +105,7 @@ import org.hamcrest.core.Is;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -801,10 +802,12 @@ public class RelMetadataTest extends SqlToRelTestBase {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1808">[CALCITE-1808]
    * JaninoRelMetadataProvider loading cache might cause
-   * OutOfMemoryError</a>. */
-  @Test public void testMetadataHandlerCacheLimit() {
-    Assume.assumeTrue("too slow to run every day, and it does not reproduce the issue",
-        CalciteSystemProperty.TEST_SLOW.value());
+   * OutOfMemoryError</a>.
+   *
+   * Too slow to run every day, and it does not reproduce the issue. */
+  @Test
+  @Category(SlowTests.class)
+  public void testMetadataHandlerCacheLimit() {
     Assume.assumeTrue("If cache size is too large, this test may fail and the "
             + "test won't be to blame",
         CalciteSystemProperty.METADATA_HANDLER_CACHE_MAXIMUM_SIZE.value()

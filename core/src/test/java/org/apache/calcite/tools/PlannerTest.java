@@ -25,7 +25,6 @@ import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.adapter.jdbc.JdbcImplementor;
 import org.apache.calcite.adapter.jdbc.JdbcRel;
 import org.apache.calcite.adapter.jdbc.JdbcRules;
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -80,6 +79,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.RelBuilderTest;
+import org.apache.calcite.test.SlowTests;
 import org.apache.calcite.util.Optionality;
 import org.apache.calcite.util.Util;
 
@@ -89,6 +89,7 @@ import com.google.common.collect.ImmutableList;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -876,9 +877,30 @@ public class PlannerTest {
             + "  MockJdbcTableScan(table=[[hr, emps]])\n"));
   }
 
-  /** Unit test that plans a query with a large number of joins. */
-  @Test public void testPlanNWayJoin()
+  @Test public void testPlan5WayJoin()
       throws Exception {
+    checkJoinNWay(5); // LoptOptimizeJoinRule disabled; takes about .4s
+  }
+
+  @Test public void testPlan9WayJoin()
+      throws Exception {
+    checkJoinNWay(9); // LoptOptimizeJoinRule enabled; takes about 0.04s
+  }
+
+  @Test public void testPlan35WayJoin()
+      throws Exception {
+    checkJoinNWay(35); // takes about 2s
+  }
+
+  @Test
+  @Category(SlowTests.class)
+  public void testPlan60WayJoin()
+      throws Exception {
+    checkJoinNWay(60); // takes about 15s
+  }
+
+  /** Test that plans a query with a large number of joins. */
+  private void checkJoinNWay(int n) throws Exception {
     // Here the times before and after enabling LoptOptimizeJoinRule.
     //
     // Note the jump between N=6 and N=7; LoptOptimizeJoinRule is disabled if
@@ -897,15 +919,6 @@ public class PlannerTest {
     //      13 OOM              96
     //      35 OOM           1,716
     //      60 OOM          12,230
-    checkJoinNWay(5); // LoptOptimizeJoinRule disabled; takes about .4s
-    checkJoinNWay(9); // LoptOptimizeJoinRule enabled; takes about 0.04s
-    checkJoinNWay(35); // takes about 2s
-    if (CalciteSystemProperty.TEST_SLOW.value()) {
-      checkJoinNWay(60); // takes about 15s
-    }
-  }
-
-  private void checkJoinNWay(int n) throws Exception {
     final StringBuilder buf = new StringBuilder();
     buf.append("select *");
     for (int i = 0; i < n; i++) {
