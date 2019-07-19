@@ -19,10 +19,12 @@ package org.apache.calcite.adapter.tpch;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.SlowTests;
+import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.TestUtil;
 
 import com.google.common.collect.ImmutableList;
 
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -848,6 +850,7 @@ public class TpchTest {
   }
 
   @Test public void testQuery07() {
+    Assume.assumeTrue(Bug.CALCITE_2223_FIXED);
     checkQuery(7);
   }
 
