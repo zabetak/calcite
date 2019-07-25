@@ -20,6 +20,8 @@ import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.util.IntegerIntervalSet;
 
+import net.jcip.annotations.NotThreadSafe;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,6 +37,7 @@ import java.util.List;
  */
 @Category(SlowTests.class)
 @RunWith(Parameterized.class)
+@NotThreadSafe
 public class FoodmartTest {
 
   private static final int[] DISABLED_IDS = {
