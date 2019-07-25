@@ -1041,7 +1041,7 @@ limitations under the License.
               </systemProperty>
             </systemProperties>
             <!-- work around https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
-            <argLine>-Xmx1536m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+            <argLine>-Xmx16g -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
           </configuration>
         </plugin>
         <plugin>
