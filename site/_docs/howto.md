@@ -112,11 +112,11 @@ environment, as follows.
      `mysql` and `postgresql` might be somewhat faster than hsqldb, but you need
      to populate it (i.e. provision a VM).
 * `-Dcalcite.debug` prints extra debugging information to stdout.
-* `-Dcalcite.test.slow` enables tests that take longer to execute. For
-  example, there are tests that create virtual TPC-H and TPC-DS schemas
-  in-memory and run tests from those benchmarks.
 * `-Dcalcite.test.splunk` enables tests that run against Splunk.
   Splunk must be installed and running.
+* `./gradlew testSlow` runs tests that take longer to execute. For
+  example, there are tests that create virtual TPC-H and TPC-DS schemas
+  in-memory and run tests from those benchmarks.
 
 Note: tests are executed in a forked JVM, so system properties are not passed automatically
 when running tests with Gradle.
@@ -570,12 +570,13 @@ Before you start:
   Guava.  These will probably be the same as those described in the
   release notes of the previous release.  Document them in the release
   notes.  To test Guava version _x.y_, specify `-Pguava.version=x.y`
-* Optional extra tests:
+* Optional tests using properties:
   * `-Dcalcite.test.db=mysql`
   * `-Dcalcite.test.db=hsqldb`
-  * `-Dcalcite.test.slow`
   * `-Dcalcite.test.mongodb`
   * `-Dcalcite.test.splunk`
+* Optional tests using tasks:
+  * `./gradlew testSlow`
 * Trigger a
   <a href="https://scan.coverity.com/projects/julianhyde-calcite">Coverity scan</a>
   by merging the latest code into the `julianhyde/coverity_scan` branch,
