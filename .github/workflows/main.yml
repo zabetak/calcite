@@ -2,13 +2,9 @@ name: CI
 
 on:
   push:
-    paths-ignore:
-      - 'site/**'
     branches:
       - '*'
   pull_request:
-    paths-ignore:
-      - 'site/**'
     branches:
       - '*'
 
@@ -18,8 +14,9 @@ jobs:
   linux:
     name: 'Dumb context'
     runs-on: ubuntu-latest
+    steps:
+    - name: 'Dumb context'
       # dump all github context
-     - name: Dump GitHub context
-     env:
-       GITHUB_CONTEXT: ${{ toJson(github) }}
-     run: echo "$GITHUB_CONTEXT"
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
