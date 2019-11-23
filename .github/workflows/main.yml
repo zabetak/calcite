@@ -6,11 +6,6 @@ on:
       - 'site/**'
     branches:
       - '*'
-  pull_request:
-    paths-ignore:
-      - 'site/**'
-    branches:
-      - '*'
 
 # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners
 
