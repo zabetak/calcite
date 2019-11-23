@@ -11,8 +11,20 @@ on:
 # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners
 
 jobs:
-  linux:
-    name: 'Dumb context'
+  linux-one:
+    if: contains(github.event.head_commit.message,'RUN_JOB_ONE')
+    name: 'Linux one'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Dumb context'
+      # dump all github context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+
+  linux-two:
+    if: "!contains(github.event.head_commit.message,'RUN_JOB_ONE')"
+    name: 'Linux two'
     runs-on: ubuntu-latest
     steps:
     - name: 'Dumb context'
