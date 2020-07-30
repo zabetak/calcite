@@ -782,6 +782,25 @@ allprojects {
             }
         }
 
+
+        apply(plugin = "jacoco")
+        configure<JacocoPluginExtension> {
+            toolVersion = "0.8.5"
+            reportsDir = file("$buildDir/customJacocoReportDir")
+        }
+        tasks.register<JacocoReport>("jacocoReport") {
+            dependsOn(tasks.withType<Test>())
+            reports {
+                html.isEnabled = true
+                xml.isEnabled = true
+                csv.isEnabled = false
+            }
+        }
+//      If we do this code coverage will be created after runnign test task
+//        tasks.configureEach<Test> {
+//            finalizedBy(tasks.getByName("jacocoTestReport"))
+//        }
+
         // Note: jars below do not normalize line endings.
         // Those jars, however are not included to source/binary distributions
         // so the normailzation is not that important
