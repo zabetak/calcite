@@ -7533,7 +7533,7 @@ public class JdbcTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1097">[CALCITE-1097]
    * Exception when executing query with too many aggregation columns</a>. */
-  @Test void testAggMultipleMeasures() throws SQLException {
+  @Disabled @Test void testAggMultipleMeasures() throws SQLException {
     final Driver driver = new Driver();
     CalciteConnection connection = (CalciteConnection)
         driver.connect("jdbc:calcite:", new Properties());
