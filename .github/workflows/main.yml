@@ -454,3 +454,25 @@ jobs:
         job-id: Druid8
         remote-build-cache-proxy-enabled: false
         arguments: --scan --no-parallel --no-daemon :druid:test -Dcalcite.test.druid=true
+  codecov:
+    if: github.event.action != 'labeled'
+    name: 'Code cov'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: 'Set up JDK 18'
+        uses: actions/setup-java@v2
+        with:
+          java-version: 18
+          distribution: 'zulu'
+      - name: 'Build coverage report'
+        run: |
+          ./gradlew jacocoAggregateTestReport -PenableJacoco
+      - name: 'Upload coverage to Codecov'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./build/reports/jacoco/jacocoAggregateTestReport/jacocoAggregateTestReport.xml
+          flags: unittests
+          verbose: true
