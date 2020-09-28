@@ -5601,6 +5601,18 @@ class RelOptRulesTest extends RelOptTestBase {
     checkSubQuery(sql).check();
   }
 
+  @Test void testLimitInExistsSubQuery() {
+    final String sql = "select empno from emp\n"
+        + "where exists (select 1 from dept where emp.deptno = dept.deptno order by dept.name limit 1)";
+    checkSubQuery(sql).withDecorrelation(false).withLateDecorrelation(true).check();
+  }
+
+  @Test void testNoLimitInExistsSubQuery() {
+    final String sql = "select empno from emp\n"
+        + "where exists (select 1 from dept where emp.deptno = dept.deptno)";
+    checkSubQuery(sql).withDecorrelation(false).withLateDecorrelation(true).check();
+  }
+
   @Test void testSelectNotInCorrelated() {
     final String sql = "select sal,\n"
         + " empno NOT IN (\n"

@@ -65,6 +65,85 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
 ]]>
         </Resource>
     </TestCase>
+  <TestCase name="testLimitInExistsSubQuery">
+    <Resource name="sql">
+      <![CDATA[select * from where exists (select 1 from dept where emp.deptno = dept.deptno order by dept.name limit 1]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalFilter(condition=[EXISTS({
+LogicalSort(sort0=[$1], dir0=[ASC], fetch=[1])
+  LogicalProject(EXPR$0=[1], NAME=[$1])
+    LogicalFilter(condition=[=($cor0.DEPTNO, $0)])
+      LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+})], variablesSet=[[$cor0]])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planMid">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8])
+    LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+      LogicalProject(i=[true])
+        LogicalSort(sort0=[$1], dir0=[ASC], fetch=[1])
+          LogicalProject(EXPR$0=[1], NAME=[$1])
+            LogicalFilter(condition=[=($cor0.DEPTNO, $0)])
+              LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8])
+    LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+      LogicalProject(i=[true])
+        LogicalSort(sort0=[$1], dir0=[ASC], fetch=[1])
+          LogicalProject(EXPR$0=[1], NAME=[$1])
+            LogicalFilter(condition=[=($cor0.DEPTNO, $0)])
+              LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testNoLimitInExistsSubQuery">
+    <Resource name="sql">
+      <![CDATA[select * from where exists (select 1 from dept where emp.deptno = dept.deptno order by dept.name limit 1]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalFilter(condition=[EXISTS({
+LogicalFilter(condition=[=($cor0.DEPTNO, $0)])
+  LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+})], variablesSet=[[$cor0]])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planMid">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8])
+    LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+      LogicalAggregate(group=[{0}])
+        LogicalProject(i=[true])
+          LogicalFilter(condition=[=($cor0.DEPTNO, $0)])
+            LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(EMPNO=[$0])
+  LogicalJoin(condition=[=($7, $9)], joinType=[inner])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalProject(DEPTNO=[$0], $f1=[true])
+      LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+  </TestCase>
     <TestCase name="testAggregateExtractProjectRuleWithFilter">
         <Resource name="sql">
             <![CDATA[select sum(sal) filter (where empno = 40)
