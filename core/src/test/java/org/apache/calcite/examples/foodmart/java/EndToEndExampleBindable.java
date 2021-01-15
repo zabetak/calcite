@@ -38,7 +38,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.rules.FilterJoinRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -51,13 +51,12 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -130,7 +129,7 @@ public class EndToEndExampleBindable {
 
     SqlValidator validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(),
         catalogReader, typeFactory,
-        SqlConformanceEnum.DEFAULT);
+        SqlValidator.Config.DEFAULT);
 
     // Validate the initial AST
     SqlNode validNode = validator.validate(sqlNode);
@@ -143,7 +142,7 @@ public class EndToEndExampleBindable {
         catalogReader,
         cluster,
         StandardConvertletTable.INSTANCE,
-        SqlToRelConverter.Config.DEFAULT);
+        SqlToRelConverter.config());
 
     // Convert the valid AST into a logical plan
     RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
@@ -155,7 +154,7 @@ public class EndToEndExampleBindable {
 
     // Initialize optimizer/planner with the necessary rules
     RelOptPlanner planner = cluster.getPlanner();
-    planner.addRule(FilterJoinRule.FILTER_ON_JOIN);
+    planner.addRule(CoreRules.FILTER_INTO_JOIN);
     planner.addRule(Bindables.BINDABLE_TABLE_SCAN_RULE);
     planner.addRule(Bindables.BINDABLE_FILTER_RULE);
     planner.addRule(Bindables.BINDABLE_JOIN_RULE);
@@ -209,13 +208,8 @@ public class EndToEndExampleBindable {
     return RelOptCluster.create(planner, new RexBuilder(factory));
   }
 
-  private static final RelOptTable.ViewExpander NOOP_EXPANDER = new RelOptTable.ViewExpander() {
-    @Override public RelRoot expandView(final RelDataType rowType, final String queryString,
-        final List<String> schemaPath,
-        final List<String> viewPath) {
-      return null;
-    }
-  };
+  private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath
+      , viewPath) -> null;
 
   /**
    * A simple data context only with schema information.
