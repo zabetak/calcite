@@ -112,13 +112,8 @@ public class EndToEndExampleBindableTemplate {
     return RelOptCluster.create(planner, new RexBuilder(factory));
   }
 
-  private static final RelOptTable.ViewExpander NOOP_EXPANDER = new RelOptTable.ViewExpander() {
-    @Override public RelRoot expandView(final RelDataType rowType, final String queryString,
-        final List<String> schemaPath,
-        final List<String> viewPath) {
-      return null;
-    }
-  };
+  private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath
+      , viewPath) -> null;
 
   /**
    * A simple data context only with schema information.
