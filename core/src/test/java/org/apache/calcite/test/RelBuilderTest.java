@@ -37,6 +37,7 @@ import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -51,8 +52,10 @@ import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.ViewTable;
 import org.apache.calcite.schema.impl.ViewTableMacro;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlMatchRecognize;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -2215,6 +2218,44 @@ public class RelBuilderTest {
         + "  LogicalFilter(condition=[=($cor0.SAL, 1000)])\n"
         + "    LogicalFilter(condition=[=($0, $cor0.DEPTNO)])\n"
         + "      LogicalTableScan(table=[[scott, DEPT]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
+  @Test void testLeftJoinAntiJoin() {
+    //    SELECT *
+    //    FROM `scott`.`DEPT` AS `D1`
+    //    LEFT JOIN `scott`.`EMP` AS `E1` ON `D1`.`DEPTNO` = `E1`.`DEPTNO`
+    //    WHERE NOT EXISTS (SELECT 1
+    //        FROM `scott`.`DEPT` AS `D2`
+    //    INNER JOIN `scott`.`EMP` AS `E2` ON `D2`.`DEPTNO` = `E2`.`DEPTNO`
+    //    WHERE `E1`.`ENAME` = `E2`.`ENAME`)
+    final RelBuilder builder = RelBuilder.create(config().build());
+    RelNode root = builder
+        .scan("DEPT").as("D1")
+        .scan("EMP").as("E1")
+        .join(JoinRelType.LEFT,
+            builder.equals(
+                builder.field(2, 0, "DEPTNO"),
+                builder.field(2, 1, "DEPTNO")))
+        .scan("DEPT").as("D2")
+        .scan("EMP").as("E2")
+        .join(JoinRelType.INNER,
+            builder.equals(
+                builder.field(2, 0, "DEPTNO"),
+                builder.field(2, 1, "DEPTNO")))
+        .antiJoin(
+            builder.equals(
+                builder.field(2, 0, "ENAME"),
+                builder.field(2, 1, "ENAME")))
+        .build();
+    String expected = ""
+        + "LogicalJoin(condition=[=($4, $15)], joinType=[anti])\n"
+        + "  LogicalJoin(condition=[=($0, $10)], joinType=[left])\n"
+        + "    LogicalTableScan(table=[[scott, DEPT]])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n"
+        + "  LogicalJoin(condition=[=($0, $10)], joinType=[inner])\n"
+        + "    LogicalTableScan(table=[[scott, DEPT]])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
   }
 
