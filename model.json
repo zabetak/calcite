@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "defaultSchema": "os",
+  "schemas": [
+    {
+      "name": "os",
+      "tables": [
+        {
+          "name": "git_commits",
+          "type": "view",
+          "sql": "select * from table(\"git_commits\"(true))"
+        }
+      ],
+      "functions": [
+        {
+          "name": "git_commits",
+          "className": "org.apache.calcite.adapter.os.GitCommitsTableFunction"
+        }
+      ]
+    }
+  ]
+}

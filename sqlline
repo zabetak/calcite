@@ -51,4 +51,4 @@ fi
 
 export JAVA_OPTS=-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl
 
-exec java -Xmx1g $VM_OPTS $JAVA_OPTS -jar "$root/build/libs/sqllineClasspath.jar" "$@"
+exec java -Xmx1g $VM_OPTS $JAVA_OPTS -jar "$root/build/libs/sqllineClasspath.jar" -u "jdbc:calcite:model=model.json;lex=java" -n "admin" -p "admin" -f git_stats.sql
