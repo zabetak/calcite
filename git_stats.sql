@@ -29,7 +29,7 @@ SELECT
 FROM git_commits a
 INNER JOIN git_commits r
   ON a.`commit`=r.`commit`
-WHERE a.commit_timestamp >= cast('2021-04-01' as date) AND a.commit_timestamp < cast('2021-07-01' as date)
+WHERE a.commit_timestamp >= cast('2021-07-01' as date) AND a.commit_timestamp < cast('2021-10-01' as date)
 AND NOT EXISTS (SELECT 1 FROM git_commits c WHERE a.author=c.committer)
 GROUP BY EXTRACT( year FROM a.commit_timestamp), MONTH(a.commit_timestamp)
 ORDER BY `year` ASC, `month` ASC;
@@ -41,7 +41,7 @@ SELECT
 FROM git_commits a
 INNER JOIN git_commits r
   ON a.`commit`=r.`commit`
-WHERE a.commit_timestamp >= cast('2021-04-01' as date) AND a.commit_timestamp < cast('2021-07-01' as date)
+WHERE a.commit_timestamp >= cast('2021-07-01' as date) AND a.commit_timestamp < cast('2021-10-01' as date)
 AND NOT EXISTS (SELECT 1 FROM git_commits c WHERE a.author=c.committer)
 GROUP BY EXTRACT( year FROM a.commit_timestamp), MONTH(a.commit_timestamp)
 ORDER BY `year` ASC, `month` ASC;
@@ -53,7 +53,7 @@ SELECT
 FROM git_commits a
 INNER JOIN git_commits r
   ON a.`commit`=r.`commit`
-WHERE a.commit_timestamp >= cast('2021-04-01' as date) AND a.commit_timestamp < cast('2021-07-01' as date)
+WHERE a.commit_timestamp >= cast('2021-07-01' as date) AND a.commit_timestamp < cast('2021-10-01' as date)
 AND NOT EXISTS (SELECT 1 FROM git_commits c WHERE a.author=c.committer)
 GROUP BY a.committer
 ORDER BY reviews DESC;
