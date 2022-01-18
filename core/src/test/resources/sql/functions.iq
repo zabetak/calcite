@@ -54,6 +54,80 @@ SELECT ExtractValue('<a>c</a>', '//a');
 
 !ok
 
+# JSON Functions
+
+select json_object('ename': 'Michael', 'dname': 'CSD', 'age': 30) format json;
+
++------------------------------------+
+| EXPR$0                             |
++------------------------------------+
+| {ename=Michael, dname=CSD, age=30} |
++------------------------------------+
+(1 row)
+
+!ok
+
+select json_object('ename': 'Michael', 'dname': 'CSD', 'age': 30);
+
++--------------------------------------------+
+| EXPR$0                                     |
++--------------------------------------------+
+| {"ename":"Michael","dname":"CSD","age":30} |
++--------------------------------------------+
+(1 row)
+
+!ok
+
+select json_object(KEY 'ename' VALUE('Michael'), KEY 'dname' VALUE('CSD'), KEY 'age' VALUE(30));
+
++--------------------------------------------+
+| EXPR$0                                     |
++--------------------------------------------+
+| {"ename":"Michael","dname":"CSD","age":30} |
++--------------------------------------------+
+(1 row)
+
+!ok
+
+select json_object(KEY 'dept' VALUE(
+        json_object(KEY 'id' VALUE(1), KEY 'name' VALUE('CSD'), KEY 'address' VALUE(
+          json_object(KEY 'number' VALUE(128), KEY 'street' VALUE('Avenue New York'), KEY 'po' VALUE(92000))))));
+
++-------------------------------------------------------------------------------------------------------------------------------------+
+| EXPR$0                                                                                                                              |
++-------------------------------------------------------------------------------------------------------------------------------------+
+| {"dept":"{\"address\":\"{\\\"number\\\":128,\\\"street\\\":\\\"Avenue New York\\\",\\\"po\\\":92000}\",\"name\":\"CSD\",\"id\":1}"} |
++-------------------------------------------------------------------------------------------------------------------------------------+
+(1 row)
+
+!ok
+
+select json_object(KEY 'dept' VALUE(
+        json_object(KEY 'id' VALUE(1), KEY 'name' VALUE('CSD'), KEY 'address' VALUE(
+          json_object(KEY 'number' VALUE(128), KEY 'street' VALUE('Avenue New York'), KEY 'po' VALUE(92000)))))) format json;
+
++-------------------------------------------------------------------------------------------------------+
+| EXPR$0                                                                                                |
++-------------------------------------------------------------------------------------------------------+
+| {dept={"address":"{\"number\":128,\"street\":\"Avenue New York\",\"po\":92000}","name":"CSD","id":1}} |
++-------------------------------------------------------------------------------------------------------+
+(1 row)
+
+!ok
+
+select json_object(KEY 'dept' VALUE(
+        json_object(KEY 'id' VALUE(1), KEY 'name' VALUE('CSD'), KEY 'address' VALUE(
+          json_object(KEY 'number' VALUE(128), KEY 'street' VALUE('Avenue New York'), KEY 'po' VALUE(92000))format json)
+          ) format json)
+       ) format json;
+
++---------------------------------------------------------------------------------+
+| EXPR$0                                                                          |
++---------------------------------------------------------------------------------+
+| {dept={address={number=128, street=Avenue New York, po=92000}, name=CSD, id=1}} |
++---------------------------------------------------------------------------------+
+(1 row)
+
 # STRING Functions
 
 #CONCAT
