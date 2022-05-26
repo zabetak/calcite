@@ -339,6 +339,15 @@ class RelToSqlConverterTest {
     sql(query).ok(expected);
   }
 
+  @Test void testSimpleQueryWithQuotesRemoved() {
+    String query = "select \"product_id\", \"product_class_id\" from \"product\"";
+    final String expected = "SELECT product_id, product_class_id\n"
+        + "FROM foodmart.product";
+    sql(query)
+        .dialect(new AnsiSqlDialect(AnsiSqlDialect.DEFAULT_CONTEXT.withIdentifierQuoteString("")))
+        .ok(expected);
+  }
+
   @Test void testSelectQueryWithWhereClauseOfLessThan() {
     String query = "select \"product_id\", \"shelf_width\"\n"
         + "from \"product\" where \"product_id\" < 10";
