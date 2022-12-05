@@ -2677,6 +2677,21 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  @Test void testHavingFalse1() {
+    String sql = "select count(*) from emp having 1=0";
+    sql(sql)
+        .withRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE, CoreRules.FILTER_REDUCE_EXPRESSIONS)
+        .withRelBuilderSimplify(false)
+        .check();
+  }
+
+  @Test void testHavingFalse2() {
+    String sql = "select count(*) from emp having 1=0";
+    sql(sql)
+        .withRule(CoreRules.FILTER_REDUCE_EXPRESSIONS, CoreRules.FILTER_AGGREGATE_TRANSPOSE)
+        .withRelBuilderSimplify(false)
+        .check();
+  }
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-570">[CALCITE-570]
    * ReduceExpressionsRule throws "duplicate key" exception</a>. */
