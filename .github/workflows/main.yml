@@ -69,5 +69,4 @@ jobs:
           directory: ./build/reports/jacoco/jacocoAggregateTestReport/
           files: ./jacocoAggregateTestReport.xml
           flags: unittests
-          path_to_write_report: ./build/reports/codecov/report.txt
           verbose: true
