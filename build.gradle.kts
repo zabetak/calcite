@@ -38,6 +38,8 @@ plugins {
     // Verification
     checkstyle
     calcite.buildext
+    jacoco
+    id("jacoco-report-aggregation")
     id("org.checkerframework") apply false
     id("com.github.autostyle")
     id("org.nosphere.apache.rat")
@@ -81,6 +83,7 @@ val enableSpotBugs = props.bool("spotbugs")
 val enableCheckerframework by props()
 val enableErrorprone by props()
 val enableDependencyAnalysis by props()
+val enableJacoco by props()
 val skipJandex by props()
 val skipCheckstyle by props()
 val skipAutostyle by props()
@@ -168,6 +171,16 @@ releaseParams {
     }
 }
 
+reporting {
+    reports {
+        if (enableJacoco) {
+            val jacocoAggregateTestReport by creating(JacocoCoverageReport::class) {
+                testType.set(TestSuiteType.UNIT_TEST)
+            }
+        }
+    }
+}
+
 val javadocAggregate by tasks.registering(Javadoc::class) {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
     description = "Generates aggregate javadoc for all the artifacts"
@@ -225,6 +238,11 @@ dependencies {
     }
     for (m in dataSetsForSqlline) {
         sqllineClasspath(module(m))
+    }
+    if (enableJacoco) {
+        for (p in subprojects) {
+            jacocoAggregation(p)
+        }
     }
 }
 
@@ -332,6 +350,9 @@ allprojects {
                 testImplementation("junit:junit")
                 testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
             }
+        }
+        if (enableJacoco) {
+            apply(plugin = "jacoco")
         }
     }
 
@@ -781,24 +802,6 @@ allprojects {
                 }
             }
         }
-
-        apply(plugin = "jacoco")
-        configure<JacocoPluginExtension> {
-            toolVersion = "0.8.5"
-            reportsDir = file("$buildDir/customJacocoReportDir")
-        }
-        tasks.register<JacocoReport>("jacocoReport") {
-            dependsOn(tasks.withType<Test>())
-            reports {
-                html.isEnabled = true
-                xml.isEnabled = true
-                csv.isEnabled = false
-            }
-        }
-//      If we do this code coverage will be created after runnign test task
-//        tasks.configureEach<Test> {
-//            finalizedBy(tasks.getByName("jacocoTestReport"))
-//        }
 
         // Note: jars below do not normalize line endings.
         // Those jars, however are not included to source/binary distributions
