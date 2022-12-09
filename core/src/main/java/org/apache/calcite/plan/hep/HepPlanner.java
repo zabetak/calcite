@@ -233,6 +233,15 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
   }
 
+  void anotherDeadMethod() {
+    Random r = new Random();
+    if (r.nextInt() > 100) {
+      executeProgram(null);
+    } else {
+      executeRuleInstance(null, null);
+    }
+  }
+
   void executeMatchLimit(HepInstruction.MatchLimit instruction,
       HepInstruction.MatchLimit.State state) {
     LOGGER.trace("Setting match limit to {}", instruction.limit);
