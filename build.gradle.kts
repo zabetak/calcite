@@ -735,7 +735,7 @@ allprojects {
                 }
                 exclude("**/*Suite*")
                 jvmArgs("-Xmx1536m")
-                jvmArgs("-agentpath:" + githubWorkspace + "/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=" + githubWorkspace + "/async-profiler-results/profile-%p.html")
+                jvmArgs("-agentpath:" + githubWorkspace + "/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=wall,file=" + githubWorkspace + "/async-profiler-results/profile-%p.html")
                 jvmArgs("-Djdk.net.URLClassPath.disableClassPathURLCheck=true")
                 // Pass the property to tests
                 fun passProperty(name: String, default: String? = null) {
