@@ -90,6 +90,7 @@ val skipAutostyle by props()
 val skipJavadoc by props()
 val enableMavenLocal by props()
 val enableGradleMetadata by props()
+val profilerAgent = props.string("profilerAgent", "")
 val werror by props(true) // treat javac warnings as errors
 // Inherited from stage-vote-release-plugin: skipSign, useGpgCmd
 // Inherited from gradle-extensions-plugin: slowSuiteLogThreshold=0L, slowTestLogThreshold=2000L
@@ -734,6 +735,9 @@ allprojects {
                 }
                 exclude("**/*Suite*")
                 jvmArgs("-Xmx1536m")
+                if (profilerAgent.isNotEmpty()) {
+                    jvmArgs(profilerAgent)
+                }
                 jvmArgs("-Djdk.net.URLClassPath.disableClassPathURLCheck=true")
                 // Pass the property to tests
                 fun passProperty(name: String, default: String? = null) {

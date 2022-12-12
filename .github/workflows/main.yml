@@ -64,25 +64,28 @@ jobs:
 #    - name: 'Index Foodmart/Wikipedia datasets'
 #      working-directory: ./druid-dataset
 #      run: ./index.sh 30s
-    - name: 'Download async-profiler' 
+    - name: 'Setup async-profiler' 
       run: |
         wget -c https://github.com/jvm-profiling-tools/async-profiler/releases/download/v2.9/async-profiler-2.9-linux-x64.tar.gz 
         tar -xvf async-profiler-2.9-linux-x64.tar.gz
-        pwd
-    - name: 'Enable perf events'
-      run: sudo sysctl kernel.perf_event_paranoid=1
-#    - uses: actions/checkout@v3
-#      with:
-#        fetch-depth: 1
-#        path: calcite
-#    - uses: burrunan/gradle-cache-action@v1
-#      name: 'Run Druid tests'
-#      timeout-minutes: 10
-#      env:
-#        S3_BUILD_CACHE_ACCESS_KEY_ID: ${{ secrets.S3_BUILD_CACHE_ACCESS_KEY_ID }}
-#        S3_BUILD_CACHE_SECRET_KEY: ${{ secrets.S3_BUILD_CACHE_SECRET_KEY }}
-#      with:
-#        build-root-directory: ./calcite
-#        job-id: Druid8
-#        remote-build-cache-proxy-enabled: false
-#        arguments: --scan --no-parallel --no-daemon :druid:test -Dcalcite.test.druid=true
+        sudo sysctl kernel.perf_event_paranoid=1
+        mkdir async-profiler-results
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        path: calcite
+    - uses: burrunan/gradle-cache-action@v1
+      name: 'Run Druid tests'
+      timeout-minutes: 10
+      env:
+        S3_BUILD_CACHE_ACCESS_KEY_ID: ${{ secrets.S3_BUILD_CACHE_ACCESS_KEY_ID }}
+        S3_BUILD_CACHE_SECRET_KEY: ${{ secrets.S3_BUILD_CACHE_SECRET_KEY }}
+      with:
+        build-root-directory: ./calcite
+        job-id: Druid8
+        remote-build-cache-proxy-enabled: false
+        arguments: --scan --no-parallel --no-daemon :linq4j:test -PprofilerAgent=-agentpath:$GITHUB_WORKSPACE/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=$GITHUB_WORKSPACE/async-profiler-results/profile-%p.html
+    - uses: actions/upload-artifact@v3
+      with:
+        name: profiles
+        path: $GITHUB_WORKSPACE/async-profiler-results/
