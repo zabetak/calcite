@@ -26,6 +26,7 @@ import com.github.vlsi.gradle.release.RepositoryType
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApisExtension
 import java.net.URI
+import java.time.Duration
 import net.ltgt.gradle.errorprone.errorprone
 import org.apache.calcite.buildtools.buildext.dsl.ParenthesisBalancer
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -733,6 +734,7 @@ allprojects {
                     exceptionFormat = TestExceptionFormat.FULL
                     showStandardStreams = true
                 }
+                timeout.set(Duration.ofMinutes(7))
                 exclude("**/*Suite*")
                 jvmArgs("-Xmx1536m")
                 jvmArgs("-agentpath:" + githubWorkspace + "/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=wall,file=" + githubWorkspace + "/async-profiler-results/profile-%p.html")
