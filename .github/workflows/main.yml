@@ -87,5 +87,4 @@ jobs:
         arguments: --scan --no-parallel --no-daemon :linq4j:test
     - uses: actions/upload-artifact@v3
       with:
-        name: profiles
-        path: $GITHUB_WORKSPACE/async-profiler-results/
+        path: ${{ github.workspace }}/async-profiler-results/*
