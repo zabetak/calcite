@@ -84,7 +84,9 @@ jobs:
         build-root-directory: ./calcite
         job-id: Druid8
         remote-build-cache-proxy-enabled: false
-        arguments: --scan --no-parallel --no-daemon :linq4j:test -PprofilerAgent=-agentpath:$GITHUB_WORKSPACE/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=$GITHUB_WORKSPACE/async-profiler-results/profile-%p.html
+        arguments: --scan --no-parallel --no-daemon :linq4j:test
+        properties: |
+          profilerAgent=-agentpath:$GITHUB_WORKSPACE/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=$GITHUB_WORKSPACE/async-profiler-results/profile-%p.html
     - uses: actions/upload-artifact@v3
       with:
         name: profiles
