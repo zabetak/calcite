@@ -80,7 +80,6 @@ jobs:
       env:
         S3_BUILD_CACHE_ACCESS_KEY_ID: ${{ secrets.S3_BUILD_CACHE_ACCESS_KEY_ID }}
         S3_BUILD_CACHE_SECRET_KEY: ${{ secrets.S3_BUILD_CACHE_SECRET_KEY }}
-        ASYNC_AGENT: -agentpath:$GITHUB_WORKSPACE/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=$GITHUB_WORKSPACE/async-profiler-results/profile-%p.html
       with:
         build-root-directory: ./calcite
         job-id: Druid8

@@ -90,7 +90,7 @@ val skipAutostyle by props()
 val skipJavadoc by props()
 val enableMavenLocal by props()
 val enableGradleMetadata by props()
-val profilerAgent = System.getenv("ASYNC_AGENT")
+val githubWorkspace = System.getenv("GITHUB_WORKSPACE")
 val werror by props(true) // treat javac warnings as errors
 // Inherited from stage-vote-release-plugin: skipSign, useGpgCmd
 // Inherited from gradle-extensions-plugin: slowSuiteLogThreshold=0L, slowTestLogThreshold=2000L
@@ -735,9 +735,7 @@ allprojects {
                 }
                 exclude("**/*Suite*")
                 jvmArgs("-Xmx1536m")
-                if (profilerAgent != null) {
-                    jvmArgs(profilerAgent)
-                }
+                jvmArgs("-agentpath:" + githubWorkspace + "/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=" + githubWorkspace + "/async-profiler-results/profile-%p.html")
                 jvmArgs("-Djdk.net.URLClassPath.disableClassPathURLCheck=true")
                 // Pass the property to tests
                 fun passProperty(name: String, default: String? = null) {
