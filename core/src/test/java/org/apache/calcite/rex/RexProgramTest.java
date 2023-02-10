@@ -1020,6 +1020,9 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplify(isNotNull(not(vBool())), "IS NOT NULL(?0.bool0)");
     checkSimplify(isNotNull(not(vBoolNotNull())), "true");
 
+    checkSimplifyUnchanged(isNull(vVarchar()));
+    checkSimplify(isNull(isNull(vVarchar())), "false");
+
     // "null is null" to "true"
     checkSimplify(isNull(nullBool), "true");
     // "(x + y) is null" simplifies to "x is null or y is null"

@@ -66,6 +66,33 @@ select * from "scott".emp where not sal > 1300 and not sal < 1200;
 
 !ok
 
+select (comm is null) is null from "scott".emp;
+
++--------+
+| EXPR$0 |
++--------+
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
+| false  |
++--------+
+(14 rows)
+
+!ok
+EnumerableCalc(expr#0..7=[{inputs}], expr#8=[false], EXPR$0=[$t8])
+  EnumerableTableScan(table=[[scott, EMP]])
+!plan
+
 # MULTISET EXCEPT
 values multiset ['a', 'c', 'a'] multiset except multiset ['a'];
 +--------+
