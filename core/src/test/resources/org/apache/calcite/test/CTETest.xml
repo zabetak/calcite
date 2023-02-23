@@ -1,0 +1,91 @@
+<?xml version="1.0" ?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to you under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<Root>
+  <TestCase name="testPlanFromSQLWithExplicitCTE">
+    <Resource name="sql">
+      <![CDATA[WITH cte AS (SELECT e.name, e.salary, d.name as dname
+      FROM emps e
+      INNER JOIN depts d ON e.deptno = d.deptno)
+SELECT sup.name, eng.name
+FROM cte eng,
+     cte sup
+WHERE sup.salary > eng.salary
+  AND eng.dname = 'Engineering'
+  AND sup.dname = 'Support']]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(NAME=[$3], NAME0=[$0])
+  LogicalFilter(condition=[AND(>($4, $1), =(CAST($2):VARCHAR, 'Engineering'), =(CAST($5):VARCHAR, 'Support'))])
+    LogicalJoin(condition=[true], joinType=[inner])
+      LogicalProject(NAME=[$2], SALARY=[$3], DNAME=[$6])
+        LogicalJoin(condition=[=($1, $5)], joinType=[inner])
+          LogicalTableScan(table=[[hr, emps]])
+          LogicalTableScan(table=[[hr, depts]])
+      LogicalProject(NAME=[$2], SALARY=[$3], DNAME=[$6])
+        LogicalJoin(condition=[=($1, $5)], joinType=[inner])
+          LogicalTableScan(table=[[hr, emps]])
+          LogicalTableScan(table=[[hr, depts]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testPlanFromSQLWithImplicitCTE">
+    <Resource name="sql">
+      <![CDATA[SELECT sup.name, eng.name
+FROM (SELECT e.name, e.salary, d.name as dname
+      FROM emps e
+      INNER JOIN depts d ON e.deptno = d.deptno) eng,
+     (SELECT e.name, e.salary, d.name as dname
+      FROM emps e
+      INNER JOIN depts d ON e.deptno = d.deptno) sup
+WHERE sup.salary > eng.salary
+  AND eng.dname = 'Engineering'
+  AND sup.dname = 'Support']]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(NAME=[$3], NAME0=[$0])
+  LogicalFilter(condition=[AND(>($4, $1), =(CAST($2):VARCHAR, 'Engineering'), =(CAST($5):VARCHAR, 'Support'))])
+    LogicalJoin(condition=[true], joinType=[inner])
+      LogicalProject(NAME=[$2], SALARY=[$3], DNAME=[$6])
+        LogicalJoin(condition=[=($1, $5)], joinType=[inner])
+          LogicalTableScan(table=[[hr, emps]])
+          LogicalTableScan(table=[[hr, depts]])
+      LogicalProject(NAME=[$2], SALARY=[$3], DNAME=[$6])
+        LogicalJoin(condition=[=($1, $5)], joinType=[inner])
+          LogicalTableScan(table=[[hr, emps]])
+          LogicalTableScan(table=[[hr, depts]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSpoolPlanWithBuilder">
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(name=[$3], name0=[$0])
+  LogicalFilter(condition=[AND(>($4, $1), =($2, 'Engineering'), =($5, 'Support'))])
+    LogicalJoin(condition=[true], joinType=[inner])
+      LogicalTableSpool(readType=[LAZY], writeType=[LAZY], table=[[CTE]])
+        LogicalProject(name=[$2], salary=[$3], name0=[$6])
+          LogicalJoin(condition=[=($1, $5)], joinType=[inner])
+            LogicalTableScan(table=[[hr, emps]])
+            LogicalTableScan(table=[[hr, depts]])
+      LogicalTableScan(table=[[CTE]])
+]]>
+    </Resource>
+  </TestCase>
+</Root>

@@ -30,7 +30,7 @@ import java.util.function.Function;
 /**
  * The source of a {@link RelNode} for running a test.
  */
-interface RelSupplier {
+public interface RelSupplier {
   RelNode apply(RelOptFixture fixture);
   RelNode apply2(RelMetadataFixture metadataFixture);
 

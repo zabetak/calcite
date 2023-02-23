@@ -2726,6 +2726,23 @@ public class RelBuilder {
     return this;
   }
 
+  public RelBuilder tableSpool(String... tableNames) {
+    final List<String> names = ImmutableList.copyOf(tableNames);
+    requireNonNull(relOptSchema, "relOptSchema");
+    RelOptTable relOptTable = relOptSchema.getTableForMember(names);
+    if (relOptTable == null) {
+      RelDataType rowType = peek().getRowType();
+      TransientTable ttable = new ListTransientTable(names.get(names.size() - 1), rowType);
+      requireNonNull(relOptSchema, "relOptSchema");
+      relOptTable =
+          RelOptTableImpl.create(relOptSchema, rowType, ttable, ImmutableList.copyOf(names));
+    }
+    RelNode spool =
+        struct.spoolFactory.createTableSpool(peek(), Spool.Type.LAZY, Spool.Type.LAZY, relOptTable);
+    replaceTop(spool);
+    return this;
+  }
+
   /**
    * Creates a {@link RepeatUnion} associated to a {@link TransientTable} without a maximum number
    * of iterations, i.e. repeatUnion(tableName, all, -1).
