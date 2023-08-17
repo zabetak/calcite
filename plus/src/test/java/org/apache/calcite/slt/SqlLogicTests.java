@@ -39,7 +39,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -233,13 +235,15 @@ public class SqlLogicTests {
     Assumptions.assumeFalse(TIMEOUT.contains(testFile), testFile + " currently timeouts");
     Assumptions.assumeFalse(UNSUPPORTED.contains(testFile),
         testFile + " contains unsupported statements");
-    OptionsParser options = new OptionsParser(false, System.out, System.err);
+    PrintStream nullStream = new PrintStream(new OutputStream() {
+      @Override public void write(final int b) {
+        // Do nothing
+      }
+    });
+    OptionsParser options = new OptionsParser(false, nullStream, nullStream);
     CalciteExecutor.register(options);
-    // Increase verbosity (by adding more "v" flags) to ge the complete stack trace
-    // for each error caused by an exception.
-    TestStatistics res = Main.execute(options, "-v", "-e", "calcite", testFile);
+    TestStatistics res = Main.execute(options, "-e", "calcite", testFile);
     checkStatsForSingleRun(res);
-    res.printStatistics(System.err);
     TestSummary summary = new TestSummary(testFile, res.getFailedTestCount());
     boolean regression = GOLDEN_SUMMARIES.regression(summary);
     assertFalse(regression, "Regression in " + summary.file);
