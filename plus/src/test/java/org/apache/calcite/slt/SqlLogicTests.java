@@ -52,19 +52,20 @@ import java.util.Set;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
  * Tests using sql-logic-test suite.
  *
  * <p>For each test file the number of failed tests is saved in a "golden" file.
- * These results are checked in as part of the `sltttestfailures.txt` resource file.
+ * These results are checked in as part of the sltttestfailures.txt resource file.
  * Currently, there are quite a few errors, so this tool does not track of the actual
  * errors that were encountered; we expect that, as bugs are fixed in Calcite,
  * the number of errors will shrink, and a more precise accounting method will be used.
  *
  * <p>The tests will fail if any test script generates
- * *more* errors than the number from the golden file.
+ * more errors than the number from the golden file.
  */
 public class SqlLogicTests {
   private static final Logger LOGGER =
@@ -173,21 +174,6 @@ public class SqlLogicTests {
       return false;
     }
 
-    /**
-     * Check if 'other' summaries have regressions compared to `this`.
-     *
-     * @return 'true' if other contains regressions.
-     * @param other  Test results to compare with.
-     *               'other' can contain only a subset of the tests.
-     */
-    boolean regression(AllTestSummaries other) {
-      boolean regression = false;
-      for (TestSummary summary: other.testResults.values()) {
-        regression = regression || this.regression(summary);
-      }
-      return regression;
-    }
-
     @Override public String toString() {
       List<TestSummary> results = new ArrayList<>(this.testResults.values());
       results.sort(Comparator.comparing(left -> left.file));
@@ -210,15 +196,6 @@ public class SqlLogicTests {
         writer.write(this.toString());
       }
     }
-
-    /**
-     * True if there is an entry for the specified test file.
-     *
-     * @param test Test file name.
-     */
-    public boolean contains(String test) {
-      return this.testResults.containsKey(test);
-    }
   }
 
   /**
@@ -226,13 +203,13 @@ public class SqlLogicTests {
    * Must be static since it is written by the `findRegressions`
    * static method.
    */
-  static AllTestSummaries testSummaries = new AllTestSummaries();
+  private static final AllTestSummaries SUMMARIES = new AllTestSummaries();
 
-  static final String GOLDEN_FILE = "/slttestfailures.txt";
+  private static final String GOLDEN_FILE = "/slttestfailures.txt";
   /**
    * Summaries checked-in as resources that we compare against.
    */
-  static AllTestSummaries goldenTestSummaries =
+  private static final AllTestSummaries GOLDEN_SUMMARIES =
       new AllTestSummaries()
           .read(SqlLogicTests.class.getResourceAsStream(GOLDEN_FILE));
 
@@ -242,52 +219,42 @@ public class SqlLogicTests {
     return net.hydromatic.sqllogictest.Main.execute(options, args);
   }
 
-  TestSummary shortSummary(String file, TestStatistics statistics) {
-    return new TestSummary(file, statistics.getFailedTestCount());
-  }
-
   /**
    * The following tests currently timeout during execution.
    * Technically these are Calcite bugs.
    */
-  Set<String> timeout =
+  private static final Set<String> TIMEOUT =
       ImmutableSet.of("test/select5.test",
           "test/random/groupby/slt_good_10.test");
 
   /**
    * The following tests contain SQL statements that are not supported by HSQLDB.
    */
-  Set<String> unsupported =
+  private static final Set<String> UNSUPPORTED =
       ImmutableSet.of("test/evidence/slt_lang_replace.test",
           "test/evidence/slt_lang_createtrigger.test",
           "test/evidence/slt_lang_droptrigger.test",
           "test/evidence/slt_lang_update.test",
           "test/evidence/slt_lang_reindex.test");
 
-  void runOneTestFile(String testFile) throws IOException {
-    if (timeout.contains(testFile)) {
-      return;
-    }
-    if (unsupported.contains(testFile)) {
-      return;
-    }
+  private static void runTestFile(String testFile) throws IOException {
+    Assumptions.assumeFalse(TIMEOUT.contains(testFile), testFile + " currently timeouts");
+    Assumptions.assumeFalse(UNSUPPORTED.contains(testFile),
+        testFile + " contains unsupported statements");
 
-    // The arguments below are command-line arguments for the sql-logic-test
-    // executable from the hydromatic project.  The verbosity of the
-    // output can be increased by adding more "-v" flags to the command-line.
-    // By increasing verbosity even more you can get in the output a complete stack trace
+    // Increase verbosity (by adding more "v" flags) to ge the complete stack trace
     // for each error caused by an exception.
     TestStatistics res = launchSqlLogicTest("-v", "-e", "calcite", testFile);
     assertThat(res, notNullValue());
     assertThat(res.getParseFailureCount(), is(0));
     assertThat(res.getIgnoredTestCount(), is(0));
     assertThat(res.getTestFileCount(), is(1));
-    res.printStatistics(System.err);  // Print errors found
-    TestSummary summary = this.shortSummary(testFile, res);
-    boolean regression = goldenTestSummaries.regression(summary);
-    Assumptions.assumeFalse(regression, "Regression in " + summary.file);
+    res.printStatistics(System.err);
+    TestSummary summary = new TestSummary(testFile, res.getFailedTestCount());
+    boolean regression = GOLDEN_SUMMARIES.regression(summary);
+    assertFalse(regression, "Regression in " + summary.file);
     // The following is only useful if a new golden file need to be created
-    testSummaries.add(summary);
+    SUMMARIES.add(summary);
   }
 
   @TestFactory @Tag("slow")
@@ -307,12 +274,12 @@ public class SqlLogicTests {
    *
    * @param testFiles Names of files containing tests.
    */
-  List<DynamicTest> generateTests(Set<String> testFiles) {
+  private List<DynamicTest> generateTests(Set<String> testFiles) {
     List<DynamicTest> result = new ArrayList<>();
     for (String test: testFiles) {
       Executable executable = new Executable() {
         @Override public void execute() {
-          assertTimeoutPreemptively(Duration.ofMinutes(10), () -> runOneTestFile(test));
+          assertTimeoutPreemptively(Duration.ofMinutes(10), () -> runTestFile(test));
         }
       };
       DynamicTest dynamicTest = DynamicTest.dynamicTest(test, executable);
@@ -331,7 +298,7 @@ public class SqlLogicTests {
     // all tests have executed and passed.
     File file = new File(GOLDEN_FILE);
     if (!file.exists()) {
-      testSummaries.writeToFile(file);
+      SUMMARIES.writeToFile(file);
     }
   }
 }

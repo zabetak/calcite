@@ -16,6 +16,6 @@
  */
 
 /**
- * Test executors for Sql Logic Test based on Calcite.
+ * Executors for Sql Logic Test based on Calcite.
  */
 package org.apache.calcite.slt.executors;
