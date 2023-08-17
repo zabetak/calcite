@@ -21,6 +21,7 @@ import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.collect.ImmutableSet;
 
+import net.hydromatic.sqllogictest.Main;
 import net.hydromatic.sqllogictest.OptionsParser;
 import net.hydromatic.sqllogictest.TestStatistics;
 
@@ -47,6 +48,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -212,13 +214,6 @@ public class SqlLogicTests {
   private static final AllTestSummaries GOLDEN_SUMMARIES =
       new AllTestSummaries()
           .read(SqlLogicTests.class.getResourceAsStream(GOLDEN_FILE));
-
-  private static TestStatistics launchSqlLogicTest(String... args) throws IOException {
-    OptionsParser options = new OptionsParser(false, System.out, System.err);
-    CalciteExecutor.register(options);
-    return net.hydromatic.sqllogictest.Main.execute(options, args);
-  }
-
   /**
    * The following tests currently timeout during execution.
    * Technically these are Calcite bugs.
@@ -241,20 +236,29 @@ public class SqlLogicTests {
     Assumptions.assumeFalse(TIMEOUT.contains(testFile), testFile + " currently timeouts");
     Assumptions.assumeFalse(UNSUPPORTED.contains(testFile),
         testFile + " contains unsupported statements");
-
+    OptionsParser options = new OptionsParser(false, System.out, System.err);
+    CalciteExecutor.register(options);
     // Increase verbosity (by adding more "v" flags) to ge the complete stack trace
     // for each error caused by an exception.
-    TestStatistics res = launchSqlLogicTest("-v", "-e", "calcite", testFile);
-    assertThat(res, notNullValue());
-    assertThat(res.getParseFailureCount(), is(0));
-    assertThat(res.getIgnoredTestCount(), is(0));
-    assertThat(res.getTestFileCount(), is(1));
+    TestStatistics res = Main.execute(options, "-v", "-e", "calcite", testFile);
+    checkStatsForSingleRun(res);
     res.printStatistics(System.err);
     TestSummary summary = new TestSummary(testFile, res.getFailedTestCount());
     boolean regression = GOLDEN_SUMMARIES.regression(summary);
     assertFalse(regression, "Regression in " + summary.file);
     // The following is only useful if a new golden file need to be created
     SUMMARIES.add(summary);
+  }
+
+  private static void checkStatsForSingleRun(TestStatistics stats) {
+    Objects.requireNonNull(stats);
+    if (stats.getParseFailureCount() > 0) {
+      throw new IllegalStateException("Failed to parse file");
+    } else if (stats.getIgnoredTestCount() > 0) {
+      throw new IllegalStateException("File was ignored");
+    } else if (stats.getTestFileCount() > 1) {
+      throw new IllegalStateException("Running multiple files not supported");
+    }
   }
 
   @TestFactory @Tag("slow")
@@ -266,7 +270,7 @@ public class SqlLogicTests {
   List<DynamicTest> testAll() {
     // Run in parallel each test file.  There are 622 of these, each taking
     // a few minutes.
-    return generateTests(net.hydromatic.sqllogictest.Main.getTestList());
+    return generateTests(Main.getTestList());
   }
 
   /**
