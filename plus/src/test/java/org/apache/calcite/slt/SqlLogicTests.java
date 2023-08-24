@@ -254,7 +254,7 @@ public class SqlLogicTests {
   }
 
   private static void checkStatsForSingleRun(TestStatistics stats) {
-    Objects.requireNonNull(stats);
+    Objects.requireNonNull(stats, "stats");
     if (stats.getParseFailureCount() > 0) {
       throw new IllegalStateException("Failed to parse file");
     } else if (stats.getIgnoredTestCount() > 0) {
