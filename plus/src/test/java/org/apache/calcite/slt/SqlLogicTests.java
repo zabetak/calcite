@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.function.Executable;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -44,7 +43,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,7 +52,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
  * Tests using sql-logic-test suite.
@@ -231,7 +228,7 @@ public class SqlLogicTests {
           "test/evidence/slt_lang_update.test",
           "test/evidence/slt_lang_reindex.test");
 
-  private static void runTestFile(String testFile) throws IOException {
+  private static void runTestFile(String testFile) {
     Assumptions.assumeFalse(TIMEOUT.contains(testFile), testFile + " currently timeouts");
     Assumptions.assumeFalse(UNSUPPORTED.contains(testFile),
         testFile + " contains unsupported statements");
@@ -242,7 +239,12 @@ public class SqlLogicTests {
     });
     OptionsParser options = new OptionsParser(false, nullStream, nullStream);
     CalciteExecutor.register(options);
-    TestStatistics res = Main.execute(options, "-e", "calcite", testFile);
+    TestStatistics res;
+    try {
+      res = Main.execute(options, "-e", "calcite", testFile);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     checkStatsForSingleRun(res);
     TestSummary summary = new TestSummary(testFile, res.getFailedTestCount());
     boolean regression = GOLDEN_SUMMARIES.regression(summary);
@@ -282,12 +284,7 @@ public class SqlLogicTests {
   private List<DynamicTest> generateTests(Set<String> testFiles) {
     List<DynamicTest> result = new ArrayList<>();
     for (String test: testFiles) {
-      Executable executable = new Executable() {
-        @Override public void execute() {
-          assertTimeoutPreemptively(Duration.ofMinutes(10), () -> runTestFile(test));
-        }
-      };
-      DynamicTest dynamicTest = DynamicTest.dynamicTest(test, executable);
+      DynamicTest dynamicTest = DynamicTest.dynamicTest(test, () -> runTestFile(test));
       result.add(dynamicTest);
     }
     return result;
