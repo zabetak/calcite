@@ -41,6 +41,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -232,12 +233,7 @@ public class SqlLogicTests {
     Assumptions.assumeFalse(TIMEOUT.contains(testFile), testFile + " currently timeouts");
     Assumptions.assumeFalse(UNSUPPORTED.contains(testFile),
         testFile + " contains unsupported statements");
-    PrintStream nullStream = new PrintStream(new OutputStream() {
-      @Override public void write(final int b) {
-        // Do nothing
-      }
-    });
-    OptionsParser options = new OptionsParser(false, nullStream, nullStream);
+    OptionsParser options = new OptionsParser(false, nullStream(), nullStream());
     CalciteExecutor.register(options);
     TestStatistics res;
     try {
@@ -251,6 +247,18 @@ public class SqlLogicTests {
     assertFalse(regression, "Regression in " + summary.file);
     // The following is only useful if a new golden file need to be created
     SUMMARIES.add(summary);
+  }
+
+  private static PrintStream nullStream() {
+    try {
+      return new PrintStream(new OutputStream() {
+        @Override public void write(final int b) {
+          // Do nothing
+        }
+      }, false, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static void checkStatsForSingleRun(TestStatistics stats) {
