@@ -66,6 +66,8 @@ rootProject.name = "calcite"
 
 include(
     "bom",
+    "util",
+    "algebra",
     "release",
     "arrow",
     "babel",

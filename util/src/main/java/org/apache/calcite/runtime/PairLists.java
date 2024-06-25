@@ -56,8 +56,8 @@ class PairLists {
       return ImmutablePairList.of();
     case 2:
       return new SingletonImmutablePairList<>(
-          castNonNull((T) list.get(0)),
-          castNonNull((U) list.get(1)));
+          Nullness.castNonNull((T) list.get(0)),
+          Nullness.castNonNull((U) list.get(1)));
     default:
       return new ArrayImmutablePairList<>(list.toArray());
     }
@@ -68,7 +68,7 @@ class PairLists {
     for (int i = 0; i < elements.length; i++) {
       checkElementNotNull(i, elements[i]);
     }
-    return castNonNullArray(elements);
+    return Nullness.castNonNullArray(elements);
   }
 
   static void checkElementNotNull(int i, @Nullable Object element) {
@@ -156,7 +156,7 @@ class PairLists {
     @Override public Map.Entry<T, U> set(int index,
         Map.@Nullable Entry<T, U> entry) {
       if (entry == null) {
-        return set(index, castNonNull(null), castNonNull(null));
+        return set(index, Nullness.castNonNull(null), Nullness.castNonNull(null));
       }
       return set(index, entry.getKey(), entry.getValue());
     }
@@ -268,7 +268,7 @@ class PairLists {
     }
 
     @Override public ImmutablePairList<T, U> immutable() {
-      return immutableBackedBy(castNonNullList(list));
+      return immutableBackedBy(Nullness.castNonNullList(list));
     }
 
     @SuppressWarnings("unchecked")
@@ -354,7 +354,7 @@ class PairLists {
         return immutable();
       }
       final ImmutableList.Builder<Object> b = ImmutableList.builder();
-      final List<Object> nonNullList = castNonNullList(list);
+      final List<Object> nonNullList = Nullness.castNonNullList(list);
       for (int j = list.size() - 2; j >= 0;) {
         b.add(nonNullList.get(j));
         b.add(nonNullList.get(j + 1));

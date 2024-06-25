@@ -1034,7 +1034,7 @@ public class ImmutableBitSet
       if (o != null) {
         return o;
       }
-      final ImmutableBitSet b = castNonNull(equivalence.get(pos));
+      final ImmutableBitSet b = Nullness.castNonNull(equivalence.get(pos));
       o = b;
       int i = b.nextSetBit(pos + 1);
       for (; i >= 0; i = b.nextSetBit(i + 1)) {

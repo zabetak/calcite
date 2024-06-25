@@ -229,7 +229,7 @@ public interface PairList<T, U> extends List<Map.Entry<T, U>> {
 
     /** Builds an ImmutablePairList. */
     public ImmutablePairList<T, U> buildImmutable() {
-      return PairLists.immutableBackedBy(castNonNullList(list));
+      return PairLists.immutableBackedBy(Nullness.castNonNullList(list));
     }
   }
 

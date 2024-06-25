@@ -479,7 +479,7 @@ public class Util {
       Field[] fields = clazz.getFields();
       int printed = 0;
       for (Field field : fields) {
-        if (isStatic(field)) {
+        if (ReflectUtil.isStatic(field)) {
           continue;
         }
         if (printed++ > 0) {
@@ -1759,7 +1759,7 @@ public class Util {
   public static <E extends @PolyNull Object> Iterator<E> cast(
       final Iterator<? extends @PolyNull Object> iter,
       final Class<E> clazz) {
-    return transform(iter, x -> clazz.cast(castNonNull(x)));
+    return transform(iter, x -> clazz.cast(Nullness.castNonNull(x)));
   }
 
   /**
@@ -2664,7 +2664,7 @@ public class Util {
     // FluentIterable provides toString
     return new FluentIterable<T>() {
       @Override public Iterator<T> iterator() {
-        return Util.transform(iterable.iterator(), function);
+        return transform(iterable.iterator(), function);
       }
     };
   }
@@ -2683,7 +2683,7 @@ public class Util {
     // FluentIterable provides toString
     return new FluentIterable<E>() {
       @Override public Iterator<E> iterator() {
-        return Util.filter(iterable.iterator(), predicate);
+        return filter(iterable.iterator(), predicate);
       }
     };
   }

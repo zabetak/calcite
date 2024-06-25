@@ -44,6 +44,7 @@ val testPostgresql by configurations.creating(integrationTestConfig)
 val testMysql by configurations.creating(integrationTestConfig)
 
 dependencies {
+    api(project(":algebra"))
     api(project(":linq4j"))
 
     api("org.locationtech.jts:jts-core")
