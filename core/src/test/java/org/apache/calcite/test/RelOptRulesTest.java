@@ -8431,6 +8431,21 @@ class RelOptRulesTest extends RelOptTestBase {
         .checkUnchanged();
   }
 
+  @Test void testNestedExistsSubQueriesWithCommonCorrelationVariable() {
+    final String sql ="SELECT d.name\n"
+        + "FROM dept d\n"
+        + "WHERE EXISTS (SELECT 1\n"
+        + "              FROM emp e\n"
+        + "              WHERE d.deptno = e.deptno AND\n"
+        + "              EXISTS (SELECT 1\n"
+        + "                     FROM project p\n"
+        + "                     WHERE d.deptno = p.deptno))";
+    sql(sql)
+        .withSubQueryRules()
+        .withLateDecorrelate(true)
+        .check();
+  }
+
   /** Test case for CALCITE-5683 for two level nested decorrelate with standard program
    * failing during the decorrelation phase. The correlation variable is used at two levels
    * deep. */

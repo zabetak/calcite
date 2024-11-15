@@ -176,6 +176,17 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(deptNestedExpandedTable);
   }
 
+  private void registerTableProject(MockSchema salesSchema, Fixture fixture) {
+    MockTable t = MockTable.create(this, salesSchema, "PROJECT", false, 10);
+    t.addColumn("PROJNO", fixture.intType, true);
+    t.addColumn("PNAME", fixture.varchar10Type);
+    t.addColumn("DEPTNO", fixture.intType);
+    t.addColumn("START_DATE", fixture.dateType);
+    t.addColumn("END_DATE", fixture.dateType);
+    t.addColumn("BUDGET", fixture.decimalType);
+    registerTable(t);
+  }
+
   private void registerTableBonus(MockSchema salesSchema, Fixture fixture) {
     MockTable bonusTable =
         MockTable.create(this, salesSchema, "BONUS", false, 0);
@@ -499,6 +510,9 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     // Register "DEPT_NESTED_EXPANDED" table.
     registerTableDeptNestedExpanded(salesSchema, fixture);
+
+    // Register "PROJECT" table.
+    registerTableProject(salesSchema, fixture);
 
     // Register "BONUS" table.
     registerTableBonus(salesSchema, fixture);
