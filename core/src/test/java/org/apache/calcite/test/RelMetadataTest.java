@@ -4178,7 +4178,7 @@ public class RelMetadataTest {
   }
 
   /** Mock catalog reader for registering a table with composite keys. */
-  private static class CompositeKeysCatalogReader
+  static class CompositeKeysCatalogReader
       extends MockCatalogReaderSimple {
     CompositeKeysCatalogReader(RelDataTypeFactory typeFactory,
         boolean caseSensitive) {
@@ -4198,12 +4198,12 @@ public class RelMetadataTest {
       // Register "T1" table.
       final MockTable t1 =
           MockTable.create(this, tSchema, "composite_keys_table", false, 7.0, null);
-      t1.addColumn("key1", typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
-      t1.addColumn("key2", typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
+      t1.addColumn("key1", typeFactory.createSqlType(SqlTypeName.VARCHAR));
+      t1.addColumn("key2", typeFactory.createSqlType(SqlTypeName.VARCHAR));
       t1.addColumn("value1", typeFactory.createSqlType(SqlTypeName.INTEGER));
+      t1.addCompositeKey("key1", "key2");
       addSizeHandler(t1);
       addDistinctRowcountHandler(t1);
-      addUniqueKeyHandler(t1);
       registerTable(t1);
       return this;
     }
