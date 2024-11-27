@@ -24,6 +24,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCalc;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.MetadataHandlerProvider;
@@ -354,19 +355,26 @@ public class RelMetadataFixture {
     });
   }
 
-  /** Checks result of getting unique keys for SQL. */
   @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertThatUniqueKeysAre(
       ImmutableBitSet... expectedUniqueKeys) {
+    return assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
+    }, expectedUniqueKeys);
+  }
+
+  /** Checks result of getting unique keys for SQL. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertThatUniqueKeysAre(BuiltInMetadata.UniqueKeys.Config config,
+      ImmutableBitSet... expectedUniqueKeys) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
+    Set<ImmutableBitSet> result = mq.getUniqueKeys(rel, config);
     assertThat(result, notNullValue());
     assertThat("unique keys, sql: " + relSupplier
             + ", rel: " + RelOptUtil.toString(rel),
         ImmutableSortedSet.copyOf(result),
         is(ImmutableSortedSet.copyOf(expectedUniqueKeys)));
-    checkUniqueConsistent(rel);
+    checkUniqueConsistent(rel, config);
     return this;
   }
 
@@ -375,14 +383,12 @@ public class RelMetadataFixture {
    * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
    * return consistent results.
    */
-  private static void checkUniqueConsistent(RelNode rel) {
+  private static void checkUniqueConsistent(RelNode rel, BuiltInMetadata.UniqueKeys.Config config) {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
+    final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel, config);
     assertThat(uniqueKeys, notNullValue());
-    final ImmutableBitSet allCols =
-        ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
-    for (ImmutableBitSet key : allCols.powerSet()) {
-      Boolean result2 = mq.areColumnsUnique(rel, key);
+    for (ImmutableBitSet key : uniqueKeys) {
+      Boolean result2 = mq.areColumnsUnique(rel, key, config.ignoreNulls());
       assertThat("areColumnsUnique. key: " + key
           + ", uniqueKeys: " + uniqueKeys
           + ", rel: " + RelOptUtil.toString(rel),

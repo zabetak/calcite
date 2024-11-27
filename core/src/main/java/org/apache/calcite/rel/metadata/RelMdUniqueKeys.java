@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import static org.apache.calcite.rel.metadata.BuiltInMetadata.UniqueKeys.Config;
 import static org.apache.calcite.rel.metadata.RelMdColumnUniqueness.PASSTHROUGH_AGGREGATIONS;
 import static org.apache.calcite.rel.metadata.RelMdColumnUniqueness.getConstantColumnSet;
 
@@ -83,8 +84,8 @@ public class RelMdUniqueKeys
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Filter rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
-    Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel.getInput(), ignoreNulls);
+      Config config) {
+    Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel.getInput(), config);
     if (uniqueKeys == null) {
       return null;
     }
@@ -101,38 +102,41 @@ public class RelMdUniqueKeys
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Sort rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
+    if (config.limit() == 0) {
+      return ImmutableSet.of();
+    }
     Double maxRowCount = mq.getMaxRowCount(rel);
     if (maxRowCount != null && maxRowCount <= 1.0d) {
       return ImmutableSet.of(ImmutableBitSet.of());
     }
-    return mq.getUniqueKeys(rel.getInput(), ignoreNulls);
+    return mq.getUniqueKeys(rel.getInput(), config);
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Correlate rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
-    return mq.getUniqueKeys(rel.getLeft(), ignoreNulls);
+      Config config) {
+    return mq.getUniqueKeys(rel.getLeft(), config);
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(TableModify rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
-    return mq.getUniqueKeys(rel.getInput(), ignoreNulls);
+      Config config) {
+    return mq.getUniqueKeys(rel.getInput(), config);
   }
 
   public Set<ImmutableBitSet> getUniqueKeys(Project rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
-    return getProjectUniqueKeys(rel, mq, ignoreNulls, rel.getProjects());
+      Config config) {
+    return getProjectUniqueKeys(rel, mq, config, rel.getProjects());
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Calc rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     RexProgram program = rel.getProgram();
-    return getProjectUniqueKeys(rel, mq, ignoreNulls,
+    return getProjectUniqueKeys(rel, mq, config,
         Util.transform(program.getProjectList(), program::expandLocalRef));
   }
 
   private static Set<ImmutableBitSet> getProjectUniqueKeys(SingleRel rel, RelMetadataQuery mq,
-      boolean ignoreNulls, List<RexNode> projExprs) {
+      Config config, List<RexNode> projExprs) {
     // LogicalProject maps a set of rows to a different set;
     // Without knowledge of the mapping function(whether it
     // preserves uniqueness), it is only safe to derive uniqueness
@@ -163,7 +167,7 @@ public class RelMdUniqueKeys
     }
 
     Set<ImmutableBitSet> childUniqueKeySet =
-        mq.getUniqueKeys(rel.getInput(), ignoreNulls);
+        mq.getUniqueKeys(rel.getInput(), config);
 
     if (childUniqueKeySet == null) {
       return ImmutableSet.of();
@@ -171,9 +175,10 @@ public class RelMdUniqueKeys
 
     Multimap<Integer, Integer> mapInToOutPos = inToOutPosBuilder.build();
 
-    ImmutableSet.Builder<ImmutableBitSet> resultBuilder = ImmutableSet.builder();
+    Set<ImmutableBitSet> resultBuilder = new HashSet<>();
     // Now add to the projUniqueKeySet the child keys that are fully
     // projected.
+    outerLoop:
     for (ImmutableBitSet colMask : childUniqueKeySet) {
       if (!inColumnsUsed.contains(colMask)) {
         // colMask contains a column that is not projected as RexInput => the key is not unique
@@ -184,18 +189,22 @@ public class RelMdUniqueKeys
       // the resulting unique keys would be {{0},{4}}, {{1},{4}}
 
       Iterable<List<Integer>> product = Linq4j.product(Util.transform(colMask, mapInToOutPos::get));
-
-      resultBuilder.addAll(Util.transform(product, ImmutableBitSet::of));
+      for (List<Integer> passKey : product) {
+        if (resultBuilder.size() == config.limit()) {
+          break outerLoop;
+        }
+        resultBuilder.add(ImmutableBitSet.of(passKey));
+      }
     }
-    return resultBuilder.build();
+    return resultBuilder;
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Join rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     if (!rel.getJoinType().projectsRight()) {
       // only return the unique keys from the LHS since a semijoin only
       // returns the LHS
-      return mq.getUniqueKeys(rel.getLeft(), ignoreNulls);
+      return mq.getUniqueKeys(rel.getLeft(), config);
     }
 
     final RelNode left = rel.getLeft();
@@ -211,10 +220,10 @@ public class RelMdUniqueKeys
     // an alternative way of getting unique key information.
 
     final Set<ImmutableBitSet> retSet = new HashSet<>();
-    final Set<ImmutableBitSet> leftSet = mq.getUniqueKeys(left, ignoreNulls);
+    final Set<ImmutableBitSet> leftSet = mq.getUniqueKeys(left, config);
     Set<ImmutableBitSet> rightSet = null;
 
-    final Set<ImmutableBitSet> tmpRightSet = mq.getUniqueKeys(right, ignoreNulls);
+    final Set<ImmutableBitSet> tmpRightSet = mq.getUniqueKeys(right, config);
     int nFieldsOnLeft = left.getRowType().getFieldCount();
 
     if (tmpRightSet != null) {
@@ -242,9 +251,9 @@ public class RelMdUniqueKeys
     // determine if either or both the LHS and RHS are unique on the
     // equijoin columns
     final Boolean leftUnique =
-        mq.areColumnsUnique(left, joinInfo.leftSet(), ignoreNulls);
+        mq.areColumnsUnique(left, joinInfo.leftSet(), config.ignoreNulls());
     final Boolean rightUnique =
-        mq.areColumnsUnique(right, joinInfo.rightSet(), ignoreNulls);
+        mq.areColumnsUnique(right, joinInfo.rightSet(), config.ignoreNulls());
 
     // if the right hand side is unique on its equijoin columns, then we can
     // add the unique keys from left if the left hand side is not null
@@ -272,17 +281,7 @@ public class RelMdUniqueKeys
           .forEach(retSet::add);
     }
 
-    // Remove sets that are supersets of other sets
-    final Set<ImmutableBitSet> reducedSet = new HashSet<>();
-    for (ImmutableBitSet bigger : retSet) {
-      if (retSet.stream()
-          .filter(smaller -> !bigger.equals(smaller))
-          .noneMatch(bigger::contains)) {
-        reducedSet.add(bigger);
-      }
-    }
-
-    return reducedSet;
+    return filterSupersets(retSet, config.limit());
   }
 
   /**
@@ -310,7 +309,7 @@ public class RelMdUniqueKeys
   }
 
   public Set<ImmutableBitSet> getUniqueKeys(Aggregate rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     if (Aggregate.isSimple(rel)) {
       final ImmutableBitSet groupKeys = rel.getGroupSet();
       RelOptPredicateList pulledUpPredicates = mq.getPulledUpPredicates(rel);
@@ -319,7 +318,7 @@ public class RelMdUniqueKeys
 
       final Set<ImmutableBitSet> preciseUniqueKeys;
       final Set<ImmutableBitSet> inputUniqueKeys =
-          mq.getUniqueKeys(rel.getInput(), ignoreNulls);
+          mq.getUniqueKeys(rel.getInput(), config);
       if (inputUniqueKeys == null) {
         preciseUniqueKeys = ImmutableSet.of(reducedGroupKeys);
       } else {
@@ -333,17 +332,23 @@ public class RelMdUniqueKeys
 
       // If an input's unique column(s) value is returned (passed through) by an aggregation
       // function, then the result of the function(s) is also unique.
-      final ImmutableSet.Builder<ImmutableBitSet> keysBuilder = ImmutableSet.builder();
+      Set<ImmutableBitSet> keysBuilder = new HashSet<>();
       if (inputUniqueKeys != null) {
+        outerLoop:
         for (ImmutableBitSet inputKey : inputUniqueKeys) {
           Iterable<List<Integer>> product =
               Linq4j.product(Util.transform(inputKey, i -> getPassedThroughCols(i, rel)));
-          keysBuilder.addAll(Util.transform(product, ImmutableBitSet::of));
+          for (List<Integer> passKey : product) {
+            if (keysBuilder.size() == config.limit()) {
+              break outerLoop;
+            }
+            keysBuilder.add(ImmutableBitSet.of(passKey));
+          }
         }
       }
 
-      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder.build()));
-    } else if (ignoreNulls) {
+      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder), config.limit());
+    } else if (config.ignoreNulls() && config.limit() > 0) {
       // group by keys form a unique key
       return ImmutableSet.of(rel.getGroupSet());
     } else {
@@ -358,7 +363,7 @@ public class RelMdUniqueKeys
    * other keys.  Given {@code {0},{1},{1,2}}, returns {@code {0},{1}}.
    */
   private static Set<ImmutableBitSet> filterSupersets(
-      Set<ImmutableBitSet> uniqueKeys) {
+      Set<ImmutableBitSet> uniqueKeys, int limit) {
     Set<ImmutableBitSet> minimalKeys = new HashSet<>();
     outer:
     for (ImmutableBitSet candidateKey : uniqueKeys) {
@@ -367,6 +372,9 @@ public class RelMdUniqueKeys
             && candidateKey.contains(possibleSubset)) {
           continue outer;
         }
+      }
+      if (minimalKeys.size() == limit) {
+        break outer;
       }
       minimalKeys.add(candidateKey);
     }
@@ -398,8 +406,8 @@ public class RelMdUniqueKeys
   }
 
   public Set<ImmutableBitSet> getUniqueKeys(Union rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
-    if (!rel.all) {
+      Config config) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -410,20 +418,25 @@ public class RelMdUniqueKeys
    * Any unique key of any input of Intersect is an unique key of the Intersect.
    */
   public Set<ImmutableBitSet> getUniqueKeys(Intersect rel,
-      RelMetadataQuery mq, boolean ignoreNulls) {
-    ImmutableSet.Builder<ImmutableBitSet> keys = new ImmutableSet.Builder<>();
+      RelMetadataQuery mq, Config config) {
+    Set<ImmutableBitSet> keys = new HashSet<>();
+    outerLoop:
     for (RelNode input : rel.getInputs()) {
-      Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(input, ignoreNulls);
+      Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(input, config);
       if (uniqueKeys != null) {
-        keys.addAll(uniqueKeys);
+        for (ImmutableBitSet inKey : uniqueKeys) {
+          if (keys.size() == config.limit()) {
+            break outerLoop;
+          }
+          keys.add(inKey);
+        }
       }
     }
-    ImmutableSet<ImmutableBitSet> uniqueKeys = keys.build();
-    if (!uniqueKeys.isEmpty()) {
-      return uniqueKeys;
+    if (!keys.isEmpty()) {
+      return keys;
     }
 
-    if (!rel.all) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -434,13 +447,13 @@ public class RelMdUniqueKeys
    * The unique keys of Minus are precisely the unique keys of its first input.
    */
   public Set<ImmutableBitSet> getUniqueKeys(Minus rel,
-      RelMetadataQuery mq, boolean ignoreNulls) {
-    Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel.getInput(0), ignoreNulls);
+      RelMetadataQuery mq, Config config) {
+    Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel.getInput(0), config);
     if (uniqueKeys != null) {
       return uniqueKeys;
     }
 
-    if (!rel.all) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -448,25 +461,30 @@ public class RelMdUniqueKeys
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(TableScan rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     final BuiltInMetadata.UniqueKeys.Handler handler =
         rel.getTable().unwrap(BuiltInMetadata.UniqueKeys.Handler.class);
     if (handler != null) {
-      return handler.getUniqueKeys(rel, mq, ignoreNulls);
+      return handler.getUniqueKeys(rel, mq, config);
     }
 
     final List<ImmutableBitSet> keys = rel.getTable().getKeys();
     if (keys == null) {
       return null;
     }
+    Set<ImmutableBitSet> result = new HashSet<>(Math.min(keys.size(), config.limit()));
     for (ImmutableBitSet key : keys) {
+      if (result.size() == config.limit()) {
+        break;
+      }
       assert rel.getTable().isKey(key);
+      result.add(key);
     }
-    return ImmutableSet.copyOf(keys);
+    return result;
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Values rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     ImmutableList<ImmutableList<RexLiteral>> tuples = rel.tuples;
     if (tuples.size() <= 1) {
       return ImmutableSet.of(ImmutableBitSet.of());
@@ -484,10 +502,15 @@ public class RelMdUniqueKeys
     }
 
     ImmutableSet.Builder<ImmutableBitSet> keySetBuilder = ImmutableSet.builder();
+    int keySetSize = 0;
     for (int i = 0; i < ranges.size(); i++) {
       final Set<RexLiteral> range = ranges.get(i);
+      if (keySetSize == config.limit()) {
+        break;
+      }
       if (range.size() == tuples.size()) {
         keySetBuilder.add(ImmutableBitSet.of(i));
+        keySetSize++;
       }
     }
     return keySetBuilder.build();
@@ -495,7 +518,7 @@ public class RelMdUniqueKeys
 
   // Catch-all rule when none of the others apply.
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode rel, RelMetadataQuery mq,
-      boolean ignoreNulls) {
+      Config config) {
     // no information available
     return null;
   }
