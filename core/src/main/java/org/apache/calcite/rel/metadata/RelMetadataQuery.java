@@ -497,21 +497,15 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
    */
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode rel,
       boolean ignoreNulls) {
-    for (;;) {
-      try {
-        return uniqueKeysHandler.getUniqueKeys(rel, this, new BuiltInMetadata.UniqueKeys.Config() {
-          @Override public boolean ignoreNulls() {
-            return ignoreNulls;
-          }
-
-          @Override public int limit() {
-            return -1;
-          }
-        });
-      } catch (MetadataHandlerProvider.NoHandler e) {
-        uniqueKeysHandler = revise(BuiltInMetadata.UniqueKeys.Handler.class);
+    return getUniqueKeys(rel, new BuiltInMetadata.UniqueKeys.Config() {
+      @Override public boolean ignoreNulls() {
+        return ignoreNulls;
       }
-    }
+
+      @Override public int limit() {
+        return -1;
+      }
+    });
   }
 
   /**
