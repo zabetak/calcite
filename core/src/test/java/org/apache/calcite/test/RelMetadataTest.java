@@ -4239,7 +4239,7 @@ public class RelMetadataTest {
       table.addWrap(
           new BuiltInMetadata.UniqueKeys.Handler() {
             @Override public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode r,
-                RelMetadataQuery mq, boolean ignoreNulls) {
+                RelMetadataQuery mq, BuiltInMetadata.UniqueKeys.Config conf) {
               return ImmutableSet.of(ImmutableBitSet.of(0, 1));
             }
           });

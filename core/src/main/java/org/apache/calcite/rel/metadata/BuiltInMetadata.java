@@ -96,22 +96,42 @@ public abstract class BuiltInMetadata {
      * <p>Nulls can be ignored if the relational expression has filtered out
      * null values.
      *
-     * @param ignoreNulls if true, ignore null values when determining
-     *                    whether the keys are unique
+     * @param conf a configuration that determines how keys are derived
      * @return set of keys, or null if this information cannot be determined
      * (whereas empty set indicates definitely no keys at all, and a set
      * containing the empty set implies every column is unique)
      */
-    @Nullable Set<ImmutableBitSet> getUniqueKeys(boolean ignoreNulls);
+    @Nullable Set<ImmutableBitSet> getUniqueKeys(Config conf);
 
     /** Handler API. */
     @FunctionalInterface
     interface Handler extends MetadataHandler<UniqueKeys> {
       @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode r, RelMetadataQuery mq,
-          boolean ignoreNulls);
+          Config conf);
 
       @Override default MetadataDef<UniqueKeys> getDef() {
         return DEF;
+      }
+    }
+
+    /** A Configuration that affects how unique keys are determined. */
+    interface Config {
+      /**
+       * Returns whether to ignore null values or not.
+       *
+       * @return whether to ignore null values or not.
+       */
+      default boolean ignoreNulls() {
+        return false;
+      }
+
+      /**
+       * Returns the limit on the number of unique keys.
+       *
+       * @return the limit on the number of unique keys.
+       */
+      default int limit() {
+        return 1000;
       }
     }
   }

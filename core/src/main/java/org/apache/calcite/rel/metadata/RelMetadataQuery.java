@@ -475,9 +475,7 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
   }
 
   /**
-   * Returns the
-   * {@link BuiltInMetadata.UniqueKeys#getUniqueKeys(boolean)}
-   * statistic.
+   * Returns the {@link BuiltInMetadata.UniqueKeys} statistic.
    *
    * @param rel the relational expression
    * @return set of keys, or null if this information cannot be determined
@@ -488,9 +486,7 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
   }
 
   /**
-   * Returns the
-   * {@link BuiltInMetadata.UniqueKeys#getUniqueKeys(boolean)}
-   * statistic.
+   * Returns the {@link BuiltInMetadata.UniqueKeys} statistic.
    *
    * @param rel         the relational expression
    * @param ignoreNulls if true, ignore null values when determining
@@ -503,7 +499,35 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
       boolean ignoreNulls) {
     for (;;) {
       try {
-        return uniqueKeysHandler.getUniqueKeys(rel, this, ignoreNulls);
+        return uniqueKeysHandler.getUniqueKeys(rel, this, new BuiltInMetadata.UniqueKeys.Config() {
+          @Override public boolean ignoreNulls() {
+            return ignoreNulls;
+          }
+
+          @Override public int limit() {
+            return -1;
+          }
+        });
+      } catch (MetadataHandlerProvider.NoHandler e) {
+        uniqueKeysHandler = revise(BuiltInMetadata.UniqueKeys.Handler.class);
+      }
+    }
+  }
+
+  /**
+   * Returns the {@link BuiltInMetadata.UniqueKeys} statistic.
+   *
+   * @param rel the relational expression
+   * @param config the configuration that determines how keys are derived
+   *
+   * @return set of keys, or null if this information cannot be determined
+   * (whereas empty set indicates definitely no keys at all)
+   */
+  public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode rel,
+      BuiltInMetadata.UniqueKeys.Config config) {
+    for (;;) {
+      try {
+        return uniqueKeysHandler.getUniqueKeys(rel, this, config);
       } catch (MetadataHandlerProvider.NoHandler e) {
         uniqueKeysHandler = revise(BuiltInMetadata.UniqueKeys.Handler.class);
       }

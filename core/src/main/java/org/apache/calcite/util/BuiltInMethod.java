@@ -868,7 +868,7 @@ public enum BuiltInMethod {
   STR_TO_MAP(SqlFunctions.class, "strToMap", String.class, String.class, String.class),
   SUBSTRING_INDEX(SqlFunctions.class, "substringIndex", String.class, String.class, int.class),
   SELECTIVITY(Selectivity.class, "getSelectivity", RexNode.class),
-  UNIQUE_KEYS(UniqueKeys.class, "getUniqueKeys", boolean.class),
+  UNIQUE_KEYS(UniqueKeys.class, "getUniqueKeys", UniqueKeys.Config.class),
   AVERAGE_ROW_SIZE(Size.class, "averageRowSize"),
   AVERAGE_COLUMN_SIZES(Size.class, "averageColumnSizes"),
   IS_PHASE_TRANSITION(Parallelism.class, "isPhaseTransition"),
