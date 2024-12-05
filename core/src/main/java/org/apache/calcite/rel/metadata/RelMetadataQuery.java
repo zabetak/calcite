@@ -503,7 +503,7 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
       }
 
       @Override public int limit() {
-        return -1;
+        return Integer.MAX_VALUE;
       }
     });
   }
