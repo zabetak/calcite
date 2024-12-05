@@ -126,7 +126,7 @@ public abstract class BuiltInMetadata {
       }
 
       /**
-       * Returns the limit on the number of unique keys.
+       * Returns the limit on the number of unique keys. The limit cannot be negative.
        *
        * @return the limit on the number of unique keys.
        */
