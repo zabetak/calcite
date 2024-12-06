@@ -1846,14 +1846,6 @@ public class RelMetadataTest {
         .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
-  @Disabled("Bug when deriving keys from project with null input keys")
-  @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputUnknownKeys() {
-    sql("select * from s.unknown_keys_table except select 1111, 2222\n")
-        .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatRel(is(instanceOf(Minus.class)))
-        .assertThatUniqueKeysAre(bitSetOf(0, 1));
-  }
-
   @Test void testUniqueKeysWithLimitOnScan() {
     sql("select * from s.passenger")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
