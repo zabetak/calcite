@@ -399,7 +399,7 @@ public class RelMdUniqueKeys
 
   public Set<ImmutableBitSet> getUniqueKeys(Union rel, RelMetadataQuery mq,
       boolean ignoreNulls) {
-    if (!rel.all) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -411,19 +411,26 @@ public class RelMdUniqueKeys
    */
   public Set<ImmutableBitSet> getUniqueKeys(Intersect rel,
       RelMetadataQuery mq, boolean ignoreNulls) {
-    ImmutableSet.Builder<ImmutableBitSet> keys = new ImmutableSet.Builder<>();
+    Set<ImmutableBitSet> keys = new HashSet<>();
     for (RelNode input : rel.getInputs()) {
+      if (keys.size() == config.limit()) {
+        break;
+      }
       Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(input, ignoreNulls);
       if (uniqueKeys != null) {
-        keys.addAll(uniqueKeys);
+        for (ImmutableBitSet inKey : uniqueKeys) {
+          if (keys.size() == config.limit()) {
+            break;
+          }
+          keys.add(inKey);
+        }
       }
     }
-    ImmutableSet<ImmutableBitSet> uniqueKeys = keys.build();
-    if (!uniqueKeys.isEmpty()) {
-      return uniqueKeys;
+    if (!keys.isEmpty()) {
+      return keys;
     }
 
-    if (!rel.all) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -440,7 +447,7 @@ public class RelMdUniqueKeys
       return uniqueKeys;
     }
 
-    if (!rel.all) {
+    if (!rel.all && config.limit() > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -459,10 +466,15 @@ public class RelMdUniqueKeys
     if (keys == null) {
       return null;
     }
+    Set<ImmutableBitSet> result = new HashSet<>(Math.min(keys.size(), config.limit()));
     for (ImmutableBitSet key : keys) {
+      if (result.size() == config.limit()) {
+        break;
+      }
       assert rel.getTable().isKey(key);
+      result.add(key);
     }
-    return ImmutableSet.copyOf(keys);
+    return result;
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Values rel, RelMetadataQuery mq,
@@ -484,10 +496,15 @@ public class RelMdUniqueKeys
     }
 
     ImmutableSet.Builder<ImmutableBitSet> keySetBuilder = ImmutableSet.builder();
+    int keySetSize = 0;
     for (int i = 0; i < ranges.size(); i++) {
       final Set<RexLiteral> range = ranges.get(i);
+      if (keySetSize == config.limit()) {
+        break;
+      }
       if (range.size() == tuples.size()) {
         keySetBuilder.add(ImmutableBitSet.of(i));
+        keySetSize++;
       }
     }
     return keySetBuilder.build();
