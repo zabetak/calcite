@@ -664,6 +664,10 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       keyList.add(keyBuilder.build());
     }
 
+    public void addCompositeKey(ImmutableBitSet key) {
+      keyList.add(key);
+    }
+
     private int columnIndex(String colName) {
       for (int i = 0; i < columnList.size(); i++) {
         Map.Entry<String, RelDataType> col = columnList.get(i);
