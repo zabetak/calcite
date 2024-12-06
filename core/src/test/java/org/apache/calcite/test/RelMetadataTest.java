@@ -132,6 +132,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -190,6 +192,21 @@ public class RelMetadataTest {
   /** Ensures that tests that use a lot of memory do not run at the same
    * time. */
   private static final ReentrantLock LOCK = new ReentrantLock();
+
+  private static final SqlTestFactory.CatalogReaderFactory COMPOSITE_FACTORY =
+      (typeFactory, caseSensitive) -> {
+        CompositeKeysCatalogReader catalogReader =
+            new CompositeKeysCatalogReader(typeFactory, false);
+        catalogReader.init();
+        return catalogReader;
+      };
+
+  private static final BuiltInMetadata.UniqueKeys.Config UNIQUE_KEYS_CONF =
+      new BuiltInMetadata.UniqueKeys.Config() {
+        @Override public int limit() {
+          return 2;
+        }
+      };
 
   //~ Methods ----------------------------------------------------------------
 
@@ -1631,6 +1648,142 @@ public class RelMetadataTest {
         .assertThatAreColumnsUnique(bitSetOf(1, 2), is(false))
         .assertThatAreColumnsUnique(bitSetOf(0, 1, 2), is(true))
         .assertThatUniqueKeysAre(bitSetOf(0, 1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnProject() {
+    sql("select * from s.composite_keys_table").withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 1));
+    sql("select key1, key1, key1, key2, key2, key2 from s.composite_keys_table")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 3), bitSetOf(0, 4));
+  }
+  @Test void testUniqueKeysWithLimitOnJoinV1() {
+    sql("select *\n"
+  + "from s.passenger t1\n"
+  + "inner join s.passenger t2\n"
+        + "   on t1.passport=t2.passport and t1.nid = t2.nid and t1.ssn = t2.ssn")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+  @Test void testUniqueKeysWithLimitOnJoinV2() {
+    sql("select *\n"
+        + "from s.passenger t1\n"
+        + "inner join s.passenger t2\n"
+        + "   on t1.fname=t2.fname")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 4), bitSetOf(0, 5));
+  }
+
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeys() {
+    sql("select passport, nid, ssn from s.passenger group by passport, nid, ssn\n")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeysAndPassthroughAggs() {
+    sql("select passport, nid, ssn, min(passport), max(passport), min(nid), max(nid)\n"
+        + "from s.passenger group by passport, nid, ssn\n")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithCompositeKeyAndPassthroughAggs() {
+    StringBuilder cols = new StringBuilder();
+    StringBuilder minCols = new StringBuilder();
+    StringBuilder maxCols = new StringBuilder();
+    for (int i = 0; i < 32; i++) {
+      if (i > 0) {
+        cols.append(',');
+        minCols.append(',');
+        maxCols.append(',');
+      }
+      cols.append("k").append(i);
+      minCols.append("min(k").append(i).append(")");
+      maxCols.append("max(k").append(i).append(")");
+    }
+    sql("select " + cols + ", " + minCols + ", " + maxCols
+        + " from s.composite_keys_32_table group by " + cols)
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithoutKeys() {
+
+  }
+
+  @Test void testUniqueKeysWithLimitGreaterZeroOnUnion() {
+    sql("select ename, job, mgr from emp union select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 1, 2));
+  }
+
+  @Test void testUniqueKeysWithLimitZeroOnUnion() {
+    sql("select ename, job, mgr from emp union select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
+          @Override public int limit() {
+            return 0;
+          }
+        });
+  }
+
+  @Test void testUniqueKeysWithLimitOnUnionAll() {
+    sql("select ename, job, mgr from emp union all select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF);
+  }
+
+  @Test void testUniqueKeysWithLimitOnIntersect() {
+    sql("select empno, deptno from emp intersect select 100, deptno from dept\n")
+        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
+          @Override public int limit() {
+            return 1;
+          }
+        },false, bitSetOf(0));
+  }
+
+  @Test void testUniqueKeysWithLimitZeroOnIntersectWhereInputKeysAreEmpty() {
+    sql("select ename, job, mgr from emp intersect select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
+          @Override public int limit() {
+            return 0;
+          }
+        },false);
+  }
+
+  @Test void testUniqueKeysWithLimitGreaterZeroOnIntersectWhereInputKeysAreEmpty() {
+    sql("select ename, job, mgr from emp intersect select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF,false, bitSetOf(0, 1, 2));
+  }
+
+
+  @Test void testUniqueKeysWithLimitOnIntersectAllWhereInputsKeysAreEmpty() {
+    sql("select ename, job, mgr from emp intersect all select ename, job, mgr from emp\n")
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF,false);
+  }
+
+  @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputHasKeys() {
+    sql("select * from s.passenger except select 1111, 2222, 3333, 'Rob'\n")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+
+  @Disabled("Bug when deriving keys from project with null input keys")
+  @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputUnknownKeys() {
+    sql("select * from s.unknown_keys_table except select 1111, 2222\n")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatUniqueKeysAre(bitSetOf(0 ,1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnScan() {
+    sql("select * from s.passenger")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(r -> r.getInput(0))
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+  }
+
+  @Test void testUniqueKeysWithLimitOnValues() {
+    sql("select * from (values\n"
+        + "('X133345', 'Zimmer', 'Bob', '13-10-2022'),\n"
+        + "('Y223455', 'Zimmer', 'Alice', '22-11-2024'))\n")
+        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(2));
   }
 
   private static ImmutableBitSet bitSetOf(int... bits) {
@@ -4205,6 +4358,28 @@ public class RelMetadataTest {
       addSizeHandler(t1);
       addDistinctRowcountHandler(t1);
       registerTable(t1);
+      MockTable t2 = MockTable.create(this, tSchema, "composite_keys_32_table", false, 22.0, null);
+      for (int i = 0; i < 32; i++) {
+        t2.addColumn("k"+i, typeFactory.createSqlType(SqlTypeName.INTEGER));
+      }
+      t2.addCompositeKey(ImmutableBitSet.range(0, 32));
+      registerTable(t2);
+      MockTable t3 = MockTable.create(this, tSchema, "passenger", false, 10.0, null);
+      t3.addColumn("passport", typeFactory.createSqlType(SqlTypeName.INTEGER), true);
+      t3.addColumn("nid", typeFactory.createSqlType(SqlTypeName.INTEGER), true);
+      t3.addColumn("ssn", typeFactory.createSqlType(SqlTypeName.INTEGER), true);
+      t3.addColumn("fname", typeFactory.createSqlType(SqlTypeName.VARCHAR));
+      registerTable(t3);
+      MockTable t4 = MockTable.create(this, tSchema, "unknown_keys_table", false, 15.0, null);
+      t4.addColumn("col1", typeFactory.createSqlType(SqlTypeName.INTEGER));
+      t4.addColumn("col2", typeFactory.createSqlType(SqlTypeName.INTEGER));
+      t4.addWrap(new BuiltInMetadata.UniqueKeys.Handler() {
+        @Override public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode r,
+            RelMetadataQuery mq, BuiltInMetadata.UniqueKeys.Config conf) {
+          return null;
+        }
+      });
+      registerTable(t4);
       return this;
     }
 

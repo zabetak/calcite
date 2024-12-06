@@ -24,6 +24,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCalc;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.MetadataHandlerProvider;
@@ -358,15 +359,30 @@ public class RelMetadataFixture {
   @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertThatUniqueKeysAre(
       ImmutableBitSet... expectedUniqueKeys) {
+    return assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
+    }, true, expectedUniqueKeys);
+  }
+
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertThatUniqueKeysAre(BuiltInMetadata.UniqueKeys.Config config,
+      ImmutableBitSet... expectedUniqueKeys) {
+    return assertThatUniqueKeysAre(config, true, expectedUniqueKeys);
+  }
+
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertThatUniqueKeysAre(BuiltInMetadata.UniqueKeys.Config config,
+      boolean checkConsistency, ImmutableBitSet... expectedUniqueKeys) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
+    Set<ImmutableBitSet> result = mq.getUniqueKeys(rel, config);
     assertThat(result, notNullValue());
     assertThat("unique keys, sql: " + relSupplier
             + ", rel: " + RelOptUtil.toString(rel),
         ImmutableSortedSet.copyOf(result),
         is(ImmutableSortedSet.copyOf(expectedUniqueKeys)));
-    checkUniqueConsistent(rel);
+    if (checkConsistency) {
+      checkUniqueConsistent(rel);
+    }
     return this;
   }
 
