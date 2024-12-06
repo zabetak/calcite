@@ -134,6 +134,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -1642,33 +1644,79 @@ public class RelMetadataTest {
         .assertThatUniqueKeysAre(bitSetOf(0, 1));
   }
 
-  @Test void testUniqueKeysWithLimitOnProject() {
-    sql("select * from s.composite_keys_table").withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1));
-    sql("select key1, key1, key1, key2, key2, key2 from s.composite_keys_table")
+  @Test void testUniqueKeysWithLimitOnProjectOverInputWithCompositeKeyAndRepeatedColumns() {
+    String cols = IntStream.range(0, 32).mapToObj(i -> "k" + i).collect(Collectors.joining(","));
+    sql("select " + cols + ", " + cols + " from s.composite_keys_32_table")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 3), bitSetOf(0, 4));
+        .assertThatRel(is(instanceOf(Project.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2),
+            ImmutableBitSet.range(0, 32),
+            ImmutableBitSet.range(0, 31).set(63));
   }
-  @Test void testUniqueKeysWithLimitOnJoinV1() {
+
+  @Test void testUniqueKeysWithLimitOnCrossJoin() {
     sql("select *\n"
-  + "from s.passenger t1\n"
-  + "inner join s.passenger t2\n"
-        + "   on t1.passport=t2.passport and t1.nid = t2.nid and t1.ssn = t2.ssn")
+        + "from s.passenger t1\n"
+        + "cross join s.passenger t2\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Join.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1, 5), bitSetOf(1, 6));
+  }
+
+  @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnKeys() {
+    sql("select *\n"
+        + "from s.passenger t1\n"
+        + "inner join s.passenger t2\n"
+        + "   on t1.passport=t2.passport")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Join.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1), bitSetOf(6));
+  }
+
+  @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnLeftKeyRightNotKey() {
+    sql("select *\n"
+        + "from s.passenger t1\n"
+        + "inner join s.passenger t2\n"
+        + "   on t1.nid=t2.age")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Join.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(5), bitSetOf(6));
+  }
+
+  @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnLeftNotKeyRightKey() {
+    sql("select *\n"
+        + "from s.passenger t1\n"
+        + "inner join s.passenger t2\n"
+        + "   on t1.age=t2.nid")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Join.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
         .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
-  @Test void testUniqueKeysWithLimitOnJoinV2() {
+
+  @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnNonKeys() {
     sql("select *\n"
         + "from s.passenger t1\n"
         + "inner join s.passenger t2\n"
         + "   on t1.fname=t2.fname")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 4), bitSetOf(0, 5));
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Join.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1, 5), bitSetOf(1, 6));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeys() {
     sql("select passport, nid, ssn from s.passenger group by passport, nid, ssn\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatRel(is(instanceOf(Aggregate.class)))
         .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
@@ -1776,7 +1824,7 @@ public class RelMetadataTest {
   }
 
   @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputHasKeys() {
-    sql("select * from s.passenger except select 1111, 2222, 3333, 'Rob'\n")
+    sql("select * from s.passenger except select 1111, 2222, 3333, 'Rob', 40\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Minus.class)))
         .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
@@ -1802,6 +1850,7 @@ public class RelMetadataTest {
     sql("select * from (values\n"
         + "('X133345', 'Zimmer', 'Bob', '13-10-2022'),\n"
         + "('Y223455', 'Zimmer', 'Alice', '22-11-2024'))\n")
+        .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Values.class)))
         .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(2));
   }
@@ -4389,6 +4438,7 @@ public class RelMetadataTest {
       t3.addColumn("nid", typeFactory.createSqlType(SqlTypeName.INTEGER), true);
       t3.addColumn("ssn", typeFactory.createSqlType(SqlTypeName.INTEGER), true);
       t3.addColumn("fname", typeFactory.createSqlType(SqlTypeName.VARCHAR));
+      t3.addColumn("age", typeFactory.createSqlType(SqlTypeName.INTEGER));
       registerTable(t3);
       MockTable t4 = MockTable.create(this, tSchema, "unknown_keys_table", false, 15.0, null);
       t4.addColumn("col1", typeFactory.createSqlType(SqlTypeName.INTEGER));

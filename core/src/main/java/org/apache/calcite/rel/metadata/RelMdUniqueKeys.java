@@ -171,9 +171,10 @@ public class RelMdUniqueKeys
 
     Multimap<Integer, Integer> mapInToOutPos = inToOutPosBuilder.build();
 
-    ImmutableSet.Builder<ImmutableBitSet> resultBuilder = ImmutableSet.builder();
+    Set<ImmutableBitSet> resultBuilder = new HashSet<>();
     // Now add to the projUniqueKeySet the child keys that are fully
     // projected.
+    outerLoop:
     for (ImmutableBitSet colMask : childUniqueKeySet) {
       if (!inColumnsUsed.contains(colMask)) {
         // colMask contains a column that is not projected as RexInput => the key is not unique
@@ -184,10 +185,14 @@ public class RelMdUniqueKeys
       // the resulting unique keys would be {{0},{4}}, {{1},{4}}
 
       Iterable<List<Integer>> product = Linq4j.product(Util.transform(colMask, mapInToOutPos::get));
-
-      resultBuilder.addAll(Util.transform(product, ImmutableBitSet::of));
+      for (List<Integer> passKey : product) {
+        if (resultBuilder.size() == config.limit()) {
+          break outerLoop;
+        }
+        resultBuilder.add(ImmutableBitSet.of(passKey));
+      }
     }
-    return resultBuilder.build();
+    return resultBuilder;
   }
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Join rel, RelMetadataQuery mq,
@@ -272,17 +277,7 @@ public class RelMdUniqueKeys
           .forEach(retSet::add);
     }
 
-    // Remove sets that are supersets of other sets
-    final Set<ImmutableBitSet> reducedSet = new HashSet<>();
-    for (ImmutableBitSet bigger : retSet) {
-      if (retSet.stream()
-          .filter(smaller -> !bigger.equals(smaller))
-          .noneMatch(bigger::contains)) {
-        reducedSet.add(bigger);
-      }
-    }
-
-    return reducedSet;
+    return filterSupersets(retSet, config.limit());
   }
 
   /**
@@ -335,13 +330,13 @@ public class RelMdUniqueKeys
       // function, then the result of the function(s) is also unique.
       Set<ImmutableBitSet> keysBuilder = new HashSet<>();
       if (inputUniqueKeys != null) {
-        passThrough:
+        outerLoop:
         for (ImmutableBitSet inputKey : inputUniqueKeys) {
           Iterable<List<Integer>> product =
               Linq4j.product(Util.transform(inputKey, i -> getPassedThroughCols(i, rel)));
           for (List<Integer> passKey : product) {
             if (keysBuilder.size() == config.limit()) {
-              break passThrough;
+              break outerLoop;
             }
             keysBuilder.add(ImmutableBitSet.of(passKey));
           }
