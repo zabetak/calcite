@@ -333,17 +333,23 @@ public class RelMdUniqueKeys
 
       // If an input's unique column(s) value is returned (passed through) by an aggregation
       // function, then the result of the function(s) is also unique.
-      final ImmutableSet.Builder<ImmutableBitSet> keysBuilder = ImmutableSet.builder();
+      Set<ImmutableBitSet> keysBuilder = new HashSet<>();
       if (inputUniqueKeys != null) {
+        passThrough:
         for (ImmutableBitSet inputKey : inputUniqueKeys) {
           Iterable<List<Integer>> product =
               Linq4j.product(Util.transform(inputKey, i -> getPassedThroughCols(i, rel)));
-          keysBuilder.addAll(Util.transform(product, ImmutableBitSet::of));
+          for (List<Integer> passKey : product) {
+            if (keysBuilder.size() == config.limit()) {
+              break passThrough;
+            }
+            keysBuilder.add(ImmutableBitSet.of(passKey));
+          }
         }
       }
 
-      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder.build()));
-    } else if (ignoreNulls) {
+      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder), config.limit());
+    } else if (config.ignoreNulls() && config.limit() > 0) {
       // group by keys form a unique key
       return ImmutableSet.of(rel.getGroupSet());
     } else {
@@ -358,7 +364,7 @@ public class RelMdUniqueKeys
    * other keys.  Given {@code {0},{1},{1,2}}, returns {@code {0},{1}}.
    */
   private static Set<ImmutableBitSet> filterSupersets(
-      Set<ImmutableBitSet> uniqueKeys) {
+      Set<ImmutableBitSet> uniqueKeys, int limit) {
     Set<ImmutableBitSet> minimalKeys = new HashSet<>();
     outer:
     for (ImmutableBitSet candidateKey : uniqueKeys) {
@@ -367,6 +373,9 @@ public class RelMdUniqueKeys
             && candidateKey.contains(possibleSubset)) {
           continue outer;
         }
+      }
+      if (minimalKeys.size() == limit) {
+        return minimalKeys;
       }
       minimalKeys.add(candidateKey);
     }
