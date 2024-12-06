@@ -221,6 +221,11 @@ public abstract class Bug {
   public static final boolean CALCITE_6611_FIXED = false;
 
   /**
+   * Placeholder for bugs in areColumnsUnique
+   */
+  public static final boolean CALCITE_XXXX_FIXED = false;
+
+  /**
    * Use this to flag temporary code.
    */
   public static final boolean TODO_FIXED = false;

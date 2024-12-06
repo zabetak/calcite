@@ -45,6 +45,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
@@ -105,6 +106,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -132,8 +134,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -200,14 +200,6 @@ public class RelMetadataTest {
         catalogReader.init();
         return catalogReader;
       };
-
-  private static final BuiltInMetadata.UniqueKeys.Config UNIQUE_KEYS_CONF =
-      new BuiltInMetadata.UniqueKeys.Config() {
-        @Override public int limit() {
-          return 2;
-        }
-      };
-
   //~ Methods ----------------------------------------------------------------
 
   /** Creates a fixture. */
@@ -1652,10 +1644,10 @@ public class RelMetadataTest {
 
   @Test void testUniqueKeysWithLimitOnProject() {
     sql("select * from s.composite_keys_table").withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 1));
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1));
     sql("select key1, key1, key1, key2, key2, key2 from s.composite_keys_table")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 3), bitSetOf(0, 4));
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 3), bitSetOf(0, 4));
   }
   @Test void testUniqueKeysWithLimitOnJoinV1() {
     sql("select *\n"
@@ -1663,7 +1655,7 @@ public class RelMetadataTest {
   + "inner join s.passenger t2\n"
         + "   on t1.passport=t2.passport and t1.nid = t2.nid and t1.ssn = t2.ssn")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
   @Test void testUniqueKeysWithLimitOnJoinV2() {
     sql("select *\n"
@@ -1671,20 +1663,21 @@ public class RelMetadataTest {
         + "inner join s.passenger t2\n"
         + "   on t1.fname=t2.fname")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 4), bitSetOf(0, 5));
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 4), bitSetOf(0, 5));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeys() {
     sql("select passport, nid, ssn from s.passenger group by passport, nid, ssn\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeysAndPassthroughAggs() {
     sql("select passport, nid, ssn, min(passport), max(passport), min(nid), max(nid)\n"
         + "from s.passenger group by passport, nid, ssn\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .assertThatRel(is(instanceOf(Aggregate.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithCompositeKeyAndPassthroughAggs() {
@@ -1704,71 +1697,96 @@ public class RelMetadataTest {
     sql("select " + cols + ", " + minCols + ", " + maxCols
         + " from s.composite_keys_32_table group by " + cols)
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Aggregate.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2),
+            ImmutableBitSet.range(0, 32),
+            ImmutableBitSet.range(0, 31).set(63));
   }
 
-  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithoutKeys() {
-
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithKeysNotInGroupBy() {
+    sql("select ename, job from emp group by ename, job\n")
+        .assertThatRel(is(instanceOf(Aggregate.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
   }
 
-  @Test void testUniqueKeysWithLimitGreaterZeroOnUnion() {
+  @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithUnknownKeys() {
+    sql("select col1 from s.unknown_keys_table group by col1\n")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatRel(is(instanceOf(Aggregate.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
+  }
+
+  @Test void testUniqueKeysWithConfOnAggregateWithGroupingSets() {
+    RelMetadataFixture fixture =
+        sql("select ename, job from emp group by grouping sets ((ename), (ename, job))\n")
+        .assertThatRel(is(instanceOf(Aggregate.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(true, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
+    if (Bug.CALCITE_XXXX_FIXED) {
+      fixture.assertThatUniqueKeysAre(uniqueKeyConfig(true, 2), bitSetOf(0, 1));
+    }
+  }
+
+  private static BuiltInMetadata.UniqueKeys.Config uniqueKeyConfig(boolean ignoreNulls, int limit) {
+    return new BuiltInMetadata.UniqueKeys.Config() {
+      @Override public boolean ignoreNulls() {
+        return ignoreNulls;
+      }
+
+      @Override public int limit() {
+        return limit;
+      }
+    };
+  }
+  @Test void testUniqueKeysWithLimitOnUnion() {
     sql("select ename, job, mgr from emp union select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0, 1, 2));
-  }
-
-  @Test void testUniqueKeysWithLimitZeroOnUnion() {
-    sql("select ename, job, mgr from emp union select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
-          @Override public int limit() {
-            return 0;
-          }
-        });
+        .assertThatRel(is(instanceOf(Union.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1, 2))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
   }
 
   @Test void testUniqueKeysWithLimitOnUnionAll() {
     sql("select ename, job, mgr from emp union all select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF);
+        .assertThatRel(is(instanceOf(Union.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
   }
 
   @Test void testUniqueKeysWithLimitOnIntersect() {
     sql("select empno, deptno from emp intersect select 100, deptno from dept\n")
-        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
-          @Override public int limit() {
-            return 1;
-          }
-        },false, bitSetOf(0));
+        .assertThatRel(is(instanceOf(Intersect.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 1), bitSetOf(0));
   }
 
-  @Test void testUniqueKeysWithLimitZeroOnIntersectWhereInputKeysAreEmpty() {
+  @Test void testUniqueKeysWithLimitOnIntersectWhereInputKeysAreEmpty() {
     sql("select ename, job, mgr from emp intersect select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
-          @Override public int limit() {
-            return 0;
-          }
-        },false);
-  }
-
-  @Test void testUniqueKeysWithLimitGreaterZeroOnIntersectWhereInputKeysAreEmpty() {
-    sql("select ename, job, mgr from emp intersect select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF,false, bitSetOf(0, 1, 2));
+        .assertThatRel(is(instanceOf(Intersect.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1, 2));
   }
 
 
   @Test void testUniqueKeysWithLimitOnIntersectAllWhereInputsKeysAreEmpty() {
     sql("select ename, job, mgr from emp intersect all select ename, job, mgr from emp\n")
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF,false);
+        .assertThatRel(is(instanceOf(Intersect.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
   }
 
   @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputHasKeys() {
     sql("select * from s.passenger except select 1111, 2222, 3333, 'Rob'\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .assertThatRel(is(instanceOf(Minus.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
   @Disabled("Bug when deriving keys from project with null input keys")
   @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputUnknownKeys() {
     sql("select * from s.unknown_keys_table except select 1111, 2222\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatRel(is(instanceOf(Minus.class)))
         .assertThatUniqueKeysAre(bitSetOf(0 ,1));
   }
 
@@ -1776,14 +1794,16 @@ public class RelMetadataTest {
     sql("select * from s.passenger")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(r -> r.getInput(0))
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(1));
+        .assertThatRel(is(instanceOf(TableScan.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnValues() {
     sql("select * from (values\n"
         + "('X133345', 'Zimmer', 'Bob', '13-10-2022'),\n"
         + "('Y223455', 'Zimmer', 'Alice', '22-11-2024'))\n")
-        .assertThatUniqueKeysAre(UNIQUE_KEYS_CONF, bitSetOf(0), bitSetOf(2));
+        .assertThatRel(is(instanceOf(Values.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(2));
   }
 
   private static ImmutableBitSet bitSetOf(int... bits) {

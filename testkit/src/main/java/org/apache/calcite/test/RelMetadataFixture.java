@@ -360,18 +360,12 @@ public class RelMetadataFixture {
   public RelMetadataFixture assertThatUniqueKeysAre(
       ImmutableBitSet... expectedUniqueKeys) {
     return assertThatUniqueKeysAre(new BuiltInMetadata.UniqueKeys.Config() {
-    }, true, expectedUniqueKeys);
+    }, expectedUniqueKeys);
   }
 
   @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertThatUniqueKeysAre(BuiltInMetadata.UniqueKeys.Config config,
       ImmutableBitSet... expectedUniqueKeys) {
-    return assertThatUniqueKeysAre(config, true, expectedUniqueKeys);
-  }
-
-  @SuppressWarnings({"UnusedReturnValue"})
-  public RelMetadataFixture assertThatUniqueKeysAre(BuiltInMetadata.UniqueKeys.Config config,
-      boolean checkConsistency, ImmutableBitSet... expectedUniqueKeys) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Set<ImmutableBitSet> result = mq.getUniqueKeys(rel, config);
@@ -380,9 +374,7 @@ public class RelMetadataFixture {
             + ", rel: " + RelOptUtil.toString(rel),
         ImmutableSortedSet.copyOf(result),
         is(ImmutableSortedSet.copyOf(expectedUniqueKeys)));
-    if (checkConsistency) {
-      checkUniqueConsistent(rel);
-    }
+    checkUniqueConsistent(rel, config);
     return this;
   }
 
@@ -391,13 +383,20 @@ public class RelMetadataFixture {
    * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
    * return consistent results.
    */
-  private static void checkUniqueConsistent(RelNode rel) {
+  private static void checkUniqueConsistent(RelNode rel, BuiltInMetadata.UniqueKeys.Config config) {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
+    final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel, config);
     assertThat(uniqueKeys, notNullValue());
-    final ImmutableBitSet allCols =
-        ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
-    for (ImmutableBitSet key : allCols.powerSet()) {
+    final Iterable<ImmutableBitSet> checkKeys;
+    // Check consistency with all output columns of the expression only when there is no limit
+    if (config.limit() == Integer.MAX_VALUE) {
+      final ImmutableBitSet allCols =
+          ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
+      checkKeys = allCols.powerSet();
+    } else {
+      checkKeys = uniqueKeys;
+    }
+    for (ImmutableBitSet key : checkKeys) {
       Boolean result2 = mq.areColumnsUnique(rel, key);
       assertThat("areColumnsUnique. key: " + key
           + ", uniqueKeys: " + uniqueKeys
