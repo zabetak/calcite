@@ -102,6 +102,9 @@ public class RelMdUniqueKeys
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Sort rel, RelMetadataQuery mq,
       boolean ignoreNulls) {
+    if (config.limit() == 0) {
+      return ImmutableSet.of();
+    }
     Double maxRowCount = mq.getMaxRowCount(rel);
     if (maxRowCount != null && maxRowCount <= 1.0d) {
       return ImmutableSet.of(ImmutableBitSet.of());
@@ -370,7 +373,7 @@ public class RelMdUniqueKeys
         }
       }
       if (minimalKeys.size() == limit) {
-        return minimalKeys;
+        break outer;
       }
       minimalKeys.add(candidateKey);
     }

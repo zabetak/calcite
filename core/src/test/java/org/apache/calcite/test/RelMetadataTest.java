@@ -1644,6 +1644,22 @@ public class RelMetadataTest {
         .assertThatUniqueKeysAre(bitSetOf(0, 1));
   }
 
+  @Test void testUniqueKeysWithLimitOnSortOneRow() {
+    sql("select ename, empno from emp order by ename limit 1")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .assertThatRel(is(instanceOf(Sort.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf());
+  }
+
+  @Test void testUniqueKeysWithLimitOnFilter() {
+    sql("select * from s.passenger t1 where t1.age > 35")
+        .withCatalogReaderFactory(COMPOSITE_FACTORY)
+        .withRelTransform(project -> project.getInput(0))
+        .assertThatRel(is(instanceOf(Filter.class)))
+        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+  }
+
   @Test void testUniqueKeysWithLimitOnProjectOverInputWithCompositeKeyAndRepeatedColumns() {
     String cols = IntStream.range(0, 32).mapToObj(i -> "k" + i).collect(Collectors.joining(","));
     sql("select " + cols + ", " + cols + " from s.composite_keys_32_table")
@@ -1835,7 +1851,7 @@ public class RelMetadataTest {
     sql("select * from s.unknown_keys_table except select 1111, 2222\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Minus.class)))
-        .assertThatUniqueKeysAre(bitSetOf(0 ,1));
+        .assertThatUniqueKeysAre(bitSetOf(0, 1));
   }
 
   @Test void testUniqueKeysWithLimitOnScan() {
@@ -4429,7 +4445,7 @@ public class RelMetadataTest {
       registerTable(t1);
       MockTable t2 = MockTable.create(this, tSchema, "composite_keys_32_table", false, 22.0, null);
       for (int i = 0; i < 32; i++) {
-        t2.addColumn("k"+i, typeFactory.createSqlType(SqlTypeName.INTEGER));
+        t2.addColumn("k" + i, typeFactory.createSqlType(SqlTypeName.INTEGER));
       }
       t2.addCompositeKey(ImmutableBitSet.range(0, 32));
       registerTable(t2);
