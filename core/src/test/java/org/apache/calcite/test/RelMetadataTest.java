@@ -78,7 +78,11 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdColumnUniqueness;
+import org.apache.calcite.rel.metadata.RelMdExplainVisibility;
+import org.apache.calcite.rel.metadata.RelMdMaxRowCount;
 import org.apache.calcite.rel.metadata.RelMdPopulationSize;
+import org.apache.calcite.rel.metadata.RelMdPredicates;
+import org.apache.calcite.rel.metadata.RelMdUniqueKeys;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -1648,8 +1652,10 @@ public class RelMetadataTest {
     sql("select ename, empno from emp order by ename limit 1")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Sort.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf());
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf());
   }
 
   @Test void testUniqueKeysWithLimitOnFilter() {
@@ -1657,7 +1663,8 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Filter.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnProjectOverInputWithCompositeKeyAndRepeatedColumns() {
@@ -1665,8 +1672,8 @@ public class RelMetadataTest {
     sql("select " + cols + ", " + cols + " from s.composite_keys_32_table")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Project.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2),
-            ImmutableBitSet.range(0, 32),
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(ImmutableBitSet.range(0, 32),
             ImmutableBitSet.range(0, 31).set(63));
   }
 
@@ -1677,8 +1684,10 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Join.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1, 5), bitSetOf(1, 6));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(1, 5), bitSetOf(1, 6));
   }
 
   @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnKeys() {
@@ -1689,8 +1698,10 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Join.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1), bitSetOf(6));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(1), bitSetOf(6));
   }
 
   @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnLeftKeyRightNotKey() {
@@ -1701,8 +1712,10 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Join.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(5), bitSetOf(6));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(5), bitSetOf(6));
   }
 
   @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnLeftNotKeyRightKey() {
@@ -1713,8 +1726,10 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Join.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnInnerJoinAndConditionOnNonKeys() {
@@ -1725,15 +1740,18 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Join.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(1, 5), bitSetOf(1, 6));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(1, 5), bitSetOf(1, 6));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeys() {
     sql("select passport, nid, ssn from s.passenger group by passport, nid, ssn\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithSimpleKeysAndPassthroughAggs() {
@@ -1741,7 +1759,8 @@ public class RelMetadataTest {
         + "from s.passenger group by passport, nid, ssn\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithCompositeKeyAndPassthroughAggs() {
@@ -1763,7 +1782,8 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2),
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(
             ImmutableBitSet.range(0, 32),
             ImmutableBitSet.range(0, 31).set(63));
   }
@@ -1771,79 +1791,82 @@ public class RelMetadataTest {
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithKeysNotInGroupBy() {
     sql("select ename, job from emp group by ename, job\n")
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0, 1))
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUniqueKeysWithLimitOnSimpleAggregateOverInputWithUnknownKeys() {
     sql("select col1 from s.unknown_keys_table group by col1\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0))
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUniqueKeysWithConfOnAggregateWithGroupingSets() {
     RelMetadataFixture fixture =
         sql("select ename, job from emp group by grouping sets ((ename), (ename, job))\n")
         .assertThatRel(is(instanceOf(Aggregate.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(true, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre();
     if (Bug.CALCITE_XXXX_FIXED) {
-      fixture.assertThatUniqueKeysAre(uniqueKeyConfig(true, 2), bitSetOf(0, 1));
+      fixture.withMetadataConfig(uniqueKeyConfig(2))
+          .assertThatUniqueKeysAre(bitSetOf(0, 1));
     }
   }
 
-  private static BuiltInMetadata.UniqueKeys.Config uniqueKeyConfig(boolean ignoreNulls, int limit) {
-    return new BuiltInMetadata.UniqueKeys.Config() {
-      @Override public boolean ignoreNulls() {
-        return ignoreNulls;
-      }
-
-      @Override public int limit() {
-        return limit;
-      }
-    };
-  }
   @Test void testUniqueKeysWithLimitOnUnion() {
     sql("select ename, job, mgr from emp union select ename, job, mgr from emp\n")
         .assertThatRel(is(instanceOf(Union.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1, 2))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0, 1, 2))
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUniqueKeysWithLimitOnUnionAll() {
     sql("select ename, job, mgr from emp union all select ename, job, mgr from emp\n")
         .assertThatRel(is(instanceOf(Union.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUniqueKeysWithLimitOnIntersect() {
     sql("select empno, deptno from emp intersect select 100, deptno from dept\n")
         .assertThatRel(is(instanceOf(Intersect.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 1), bitSetOf(0));
+        .withMetadataConfig(uniqueKeyConfig(1))
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void testUniqueKeysWithLimitOnIntersectWhereInputKeysAreEmpty() {
     sql("select ename, job, mgr from emp intersect select ename, job, mgr from emp\n")
         .assertThatRel(is(instanceOf(Intersect.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 0))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0, 1, 2));
+        .withMetadataConfig(uniqueKeyConfig(0))
+        .assertThatUniqueKeysAre()
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0, 1, 2));
   }
 
 
   @Test void testUniqueKeysWithLimitOnIntersectAllWhereInputsKeysAreEmpty() {
     sql("select ename, job, mgr from emp intersect all select ename, job, mgr from emp\n")
         .assertThatRel(is(instanceOf(Intersect.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUniqueKeysWithLimitOnExceptWhereLeftInputHasKeys() {
     sql("select * from s.passenger except select 1111, 2222, 3333, 'Rob', 40\n")
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .assertThatRel(is(instanceOf(Minus.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnScan() {
@@ -1851,7 +1874,8 @@ public class RelMetadataTest {
         .withCatalogReaderFactory(COMPOSITE_FACTORY)
         .withRelTransform(r -> r.getInput(0))
         .assertThatRel(is(instanceOf(TableScan.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(1));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1));
   }
 
   @Test void testUniqueKeysWithLimitOnValues() {
@@ -1860,7 +1884,8 @@ public class RelMetadataTest {
         + "('Y223455', 'Zimmer', 'Alice', '22-11-2024'))\n")
         .withRelTransform(project -> project.getInput(0))
         .assertThatRel(is(instanceOf(Values.class)))
-        .assertThatUniqueKeysAre(uniqueKeyConfig(false, 2), bitSetOf(0), bitSetOf(2));
+        .withMetadataConfig(uniqueKeyConfig(2))
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(2));
   }
 
   private static ImmutableBitSet bitSetOf(int... bits) {
@@ -4308,6 +4333,21 @@ public class RelMetadataTest {
                 + "true. join=" + join);
   }
 
+  private static RelMetadataFixture.MetadataConfig uniqueKeyConfig(int limit) {
+    ImmutableList.Builder<RelMetadataProvider> providers = ImmutableList.builder();
+    providers.add(
+        ReflectiveRelMetadataProvider.reflectiveSource(new RelMdUniqueKeys(limit),
+            BuiltInMetadata.UniqueKeys.Handler.class));
+    // The RelMdUniqueKeys handler relies on the following providers
+    providers.add(RelMdColumnUniqueness.SOURCE);
+    providers.add(RelMdPredicates.SOURCE);
+    providers.add(RelMdMaxRowCount.SOURCE);
+    // The visibility provider is needed for printing plans in tests
+    providers.add(RelMdExplainVisibility.SOURCE);
+    return new RelMetadataFixture.MetadataConfig("UQ", JaninoRelMetadataProvider::of,
+        () -> new ChainedRelMetadataProvider(providers.build()) {
+        }, false);
+  }
   //~ Inner classes and interfaces -------------------------------------------
 
   /** Custom metadata interface. */
@@ -4453,7 +4493,7 @@ public class RelMetadataTest {
       t4.addColumn("col2", typeFactory.createSqlType(SqlTypeName.INTEGER));
       t4.addWrap(new BuiltInMetadata.UniqueKeys.Handler() {
         @Override public @Nullable Set<ImmutableBitSet> getUniqueKeys(RelNode r,
-            RelMetadataQuery mq, BuiltInMetadata.UniqueKeys.Config conf) {
+            RelMetadataQuery mq, boolean ignoreNulls) {
           return null;
         }
       });

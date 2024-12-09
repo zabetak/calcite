@@ -71,10 +71,27 @@ public class RelMdUniqueKeys
   public static final RelMetadataProvider SOURCE =
       ReflectiveRelMetadataProvider.reflectiveSource(
           new RelMdUniqueKeys(), BuiltInMetadata.UniqueKeys.Handler.class);
-
+  /**
+   * A limit about the number of unique keys returned by the handler.
+   */
+  private final int limit;
   //~ Constructors -----------------------------------------------------------
 
-  private RelMdUniqueKeys() {}
+  public RelMdUniqueKeys() {
+    this(Integer.MAX_VALUE);
+  }
+
+  /**
+   * Create a metadata handler with the specified limit.
+   * @param limit a non-negative integer that bounds the number of unique keys returned for each
+   *              relational expression.
+   */
+  public RelMdUniqueKeys(int limit) {
+    if (limit < 0) {
+      throw new IllegalArgumentException("Limit cannot be negative");
+    }
+    this.limit = limit;
+  }
 
   //~ Methods ----------------------------------------------------------------
 
@@ -102,7 +119,7 @@ public class RelMdUniqueKeys
 
   public @Nullable Set<ImmutableBitSet> getUniqueKeys(Sort rel, RelMetadataQuery mq,
       boolean ignoreNulls) {
-    if (config.limit() == 0) {
+    if (limit == 0) {
       return ImmutableSet.of();
     }
     Double maxRowCount = mq.getMaxRowCount(rel);
@@ -134,7 +151,7 @@ public class RelMdUniqueKeys
         Util.transform(program.getProjectList(), program::expandLocalRef));
   }
 
-  private static Set<ImmutableBitSet> getProjectUniqueKeys(SingleRel rel, RelMetadataQuery mq,
+  private Set<ImmutableBitSet> getProjectUniqueKeys(SingleRel rel, RelMetadataQuery mq,
       boolean ignoreNulls, List<RexNode> projExprs) {
     // LogicalProject maps a set of rows to a different set;
     // Without knowledge of the mapping function(whether it
@@ -189,7 +206,7 @@ public class RelMdUniqueKeys
 
       Iterable<List<Integer>> product = Linq4j.product(Util.transform(colMask, mapInToOutPos::get));
       for (List<Integer> passKey : product) {
-        if (resultBuilder.size() == config.limit()) {
+        if (resultBuilder.size() == limit) {
           break outerLoop;
         }
         resultBuilder.add(ImmutableBitSet.of(passKey));
@@ -280,7 +297,7 @@ public class RelMdUniqueKeys
           .forEach(retSet::add);
     }
 
-    return filterSupersets(retSet, config.limit());
+    return filterSupersets(retSet, limit);
   }
 
   /**
@@ -338,7 +355,7 @@ public class RelMdUniqueKeys
           Iterable<List<Integer>> product =
               Linq4j.product(Util.transform(inputKey, i -> getPassedThroughCols(i, rel)));
           for (List<Integer> passKey : product) {
-            if (keysBuilder.size() == config.limit()) {
+            if (keysBuilder.size() == limit) {
               break outerLoop;
             }
             keysBuilder.add(ImmutableBitSet.of(passKey));
@@ -346,8 +363,8 @@ public class RelMdUniqueKeys
         }
       }
 
-      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder), config.limit());
-    } else if (config.ignoreNulls() && config.limit() > 0) {
+      return filterSupersets(Sets.union(preciseUniqueKeys, keysBuilder), limit);
+    } else if (ignoreNulls && limit > 0) {
       // group by keys form a unique key
       return ImmutableSet.of(rel.getGroupSet());
     } else {
@@ -406,7 +423,7 @@ public class RelMdUniqueKeys
 
   public Set<ImmutableBitSet> getUniqueKeys(Union rel, RelMetadataQuery mq,
       boolean ignoreNulls) {
-    if (!rel.all && config.limit() > 0) {
+    if (!rel.all && limit > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -420,13 +437,13 @@ public class RelMdUniqueKeys
       RelMetadataQuery mq, boolean ignoreNulls) {
     Set<ImmutableBitSet> keys = new HashSet<>();
     for (RelNode input : rel.getInputs()) {
-      if (keys.size() == config.limit()) {
+      if (keys.size() == limit) {
         break;
       }
       Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(input, ignoreNulls);
       if (uniqueKeys != null) {
         for (ImmutableBitSet inKey : uniqueKeys) {
-          if (keys.size() == config.limit()) {
+          if (keys.size() == limit) {
             break;
           }
           keys.add(inKey);
@@ -437,7 +454,7 @@ public class RelMdUniqueKeys
       return keys;
     }
 
-    if (!rel.all && config.limit() > 0) {
+    if (!rel.all && limit > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -454,7 +471,7 @@ public class RelMdUniqueKeys
       return uniqueKeys;
     }
 
-    if (!rel.all && config.limit() > 0) {
+    if (!rel.all && limit > 0) {
       return ImmutableSet.of(
           ImmutableBitSet.range(rel.getRowType().getFieldCount()));
     }
@@ -473,9 +490,9 @@ public class RelMdUniqueKeys
     if (keys == null) {
       return null;
     }
-    Set<ImmutableBitSet> result = new HashSet<>(Math.min(keys.size(), config.limit()));
+    Set<ImmutableBitSet> result = new HashSet<>(Math.min(keys.size(), limit));
     for (ImmutableBitSet key : keys) {
-      if (result.size() == config.limit()) {
+      if (result.size() == limit) {
         break;
       }
       assert rel.getTable().isKey(key);
@@ -506,7 +523,7 @@ public class RelMdUniqueKeys
     int keySetSize = 0;
     for (int i = 0; i < ranges.size(); i++) {
       final Set<RexLiteral> range = ranges.get(i);
-      if (keySetSize == config.limit()) {
+      if (keySetSize == limit) {
         break;
       }
       if (range.size() == tuples.size()) {
