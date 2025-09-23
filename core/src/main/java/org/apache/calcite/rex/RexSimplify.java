@@ -2803,29 +2803,11 @@ public class RexSimplify {
 
     private boolean accept2(RexNode left, RexNode right, SqlKind kind,
         List<RexNode> newTerms) {
-      switch (left.getKind()) {
-      case INPUT_REF:
-      case FIELD_ACCESS:
-      case CAST:
-        switch (right.getKind()) {
-        case LITERAL:
-          return accept2b(left, kind, (RexLiteral) right, newTerms);
-        default:
-          break;
-        }
-        return false;
-      case LITERAL:
-        switch (right.getKind()) {
-        case INPUT_REF:
-        case FIELD_ACCESS:
-        case CAST:
-          return accept2b(right, kind.reverse(), (RexLiteral) left, newTerms);
-        default:
-          break;
-        }
-        return false;
-      default:
-        break;
+      if (right.isA(SqlKind.LITERAL) && RexUtil.isDeterministic(left)) {
+        return accept2b(left, kind, (RexLiteral) right, newTerms);
+      }
+      if (left.isA(SqlKind.LITERAL) && RexUtil.isDeterministic(right)) {
+        return accept2b(right, kind.reverse(), (RexLiteral) left, newTerms);
       }
       return false;
     }

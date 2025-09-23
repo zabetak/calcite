@@ -1738,6 +1738,22 @@ class RexProgramTest extends RexProgramTestBase {
         .expandedSearch(expanded);
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-7194">[CALCITE-7194]
+   * Simplify comparisons between function calls and literals to SEARCH</a>. */
+  @Test void testSimplifyComparisonsOfCallsWithLiteralsToSearch() {
+    RexNode v1 = input(tInt(), 1);
+    RexNode v2 = input(tInt(), 2);
+    RexNode plus = plus(v1, v2);
+    checkSimplify(and(gt(plus, literal(100000)), lt(plus, literal(200000))),
+        "SEARCH(+($1, $2), Sarg[(100000..200000)])");
+    checkSimplify(or(eq(plus, literal(100000)), eq(plus, literal(200000))),
+        "SEARCH(+($1, $2), Sarg[100000, 200000])");
+    RexNode ndc = rexBuilder.makeCall(getNoDeterministicOperator(), v1, v2);
+    checkSimplifyUnchanged(or(eq(ndc, literal(100000)), eq(ndc, literal(200000))));
+    checkSimplifyUnchanged(and(gt(ndc, literal(100000)), lt(ndc, literal(200000))));
+  }
+
   @Test void testSimplifyAndIsNotNullWithEquality() {
     // "AND(IS NOT NULL(x), =(x, y)) => AND(IS NOT NULL(x), =(x, y)) (unknownAsFalse=false),
     // "=(x, y)" (unknownAsFalse=true)
