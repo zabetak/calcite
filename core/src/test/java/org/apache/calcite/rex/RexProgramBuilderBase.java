@@ -61,6 +61,7 @@ public abstract class RexProgramBuilderBase {
   protected RexLiteral nullVarchar;
   protected RexLiteral nullDecimal;
   protected RexLiteral nullVarbinary;
+  protected RexLiteral nullDouble;
 
   private RelDataType nullableBool;
   private RelDataType nonNullableBool;
@@ -76,6 +77,9 @@ public abstract class RexProgramBuilderBase {
 
   private RelDataType nullableDecimal;
   private RelDataType nonNullableDecimal;
+
+  private RelDataType nullableDouble;
+  private RelDataType nonNullableDouble;
 
   private RelDataType nullableVarbinary;
   private RelDataType nonNullableVarbinary;
@@ -120,6 +124,10 @@ public abstract class RexProgramBuilderBase {
     nonNullableDecimal = typeFactory.createSqlType(SqlTypeName.DECIMAL);
     nullableDecimal = typeFactory.createTypeWithNullability(nonNullableDecimal, true);
     nullDecimal = rexBuilder.makeNullLiteral(nullableDecimal);
+
+    nonNullableDouble = typeFactory.createSqlType(SqlTypeName.DOUBLE);
+    nullableDouble = typeFactory.createTypeWithNullability(nonNullableDouble, true);
+    nullDouble = rexBuilder.makeNullLiteral(nullableDouble);
 
     nonNullableVarbinary = typeFactory.createSqlType(SqlTypeName.VARBINARY);
     nullableVarbinary = typeFactory.createTypeWithNullability(nonNullableVarbinary, true);
@@ -413,6 +421,14 @@ public abstract class RexProgramBuilderBase {
     return nullable ? nullableDecimal : nonNullableDecimal;
   }
 
+  protected RelDataType tDouble() {
+    return tDouble(false);
+  }
+
+  protected RelDataType tDouble(boolean nullable) {
+    return nullable ? nullableDouble : nonNullableDouble;
+  }
+
   protected RelDataType tBigInt() {
     return tBigInt(false);
   }
@@ -487,6 +503,9 @@ public abstract class RexProgramBuilderBase {
     return rexBuilder.makeLiteral(value, nonNullableVarchar);
   }
 
+  protected RexLiteral literal(double value) {
+    return rexBuilder.makeApproxLiteral(BigDecimal.valueOf(value), nonNullableDouble);
+  }
   // Variables
 
   /**
