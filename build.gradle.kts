@@ -22,7 +22,6 @@ import com.github.vlsi.gradle.git.FindGitAttributes
 import com.github.vlsi.gradle.git.dsl.gitignore
 import com.github.vlsi.gradle.properties.dsl.lastEditYear
 import com.github.vlsi.gradle.properties.dsl.props
-import com.github.vlsi.gradle.release.RepositoryType
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApisExtension
 import java.net.URI
@@ -57,7 +56,6 @@ plugins {
     id("com.github.vlsi.crlf")
     id("com.github.vlsi.gradle-extensions")
     id("com.github.vlsi.license-gather") apply false
-    id("com.github.vlsi.stage-vote-release")
     id("com.autonomousapps.dependency-analysis") apply false
 }
 
@@ -132,45 +130,11 @@ val rat by tasks.getting(org.nosphere.apache.rat.RatTask::class) {
     exclude(rootDir.resolve(".ratignore").readLines())
 }
 
-tasks.validateBeforeBuildingReleaseArtifacts {
-    dependsOn(rat)
-}
-
 val String.v: String get() = rootProject.extra["$this.version"] as String
 
-val buildVersion = "calcite".v + releaseParams.snapshotSuffix
+val buildVersion = "calcite".v
 
 println("Building Apache Calcite $buildVersion")
-
-releaseArtifacts {
-    fromProject(":release")
-}
-
-// Configures URLs to SVN and Nexus
-releaseParams {
-    tlp.set("Calcite")
-    componentName.set("Apache Calcite")
-    releaseTag.set("calcite-$buildVersion")
-    rcTag.set(rc.map { "calcite-$buildVersion-rc$it" })
-    sitePreviewEnabled.set(false)
-    nexus {
-        // https://github.com/marcphilipp/nexus-publish-plugin/issues/35
-        packageGroup.set("org.apache.calcite")
-        if (repositoryType.get() == RepositoryType.PROD) {
-            // org.apache.calcite at repository.apache.org
-            stagingProfileId.set("778fd0d4358bb")
-        }
-    }
-    svnDist {
-        staleRemovalFilters {
-            includes.add(Regex(".*apache-calcite-\\d.*"))
-            validates.empty()
-            validates.add(provider {
-                Regex("release/calcite/apache-calcite-${version.toString().removeSuffix("-SNAPSHOT")}")
-            })
-        }
-    }
-}
 
 reporting {
     reports {
@@ -934,6 +898,18 @@ allprojects {
                             url.set("https://github.com/apache/calcite")
                             tag.set("HEAD")
                         }
+                    }
+                }
+            }
+        }
+        publishing {
+            repositories {
+                maven {
+                    name = "GitHub"
+                    url = uri("https://maven.pkg.github.com/zabetak/calcite")
+                    credentials {
+                        username = findProperty("nexusUsername") as String? ?: System.getenv("NEXUS_USERNAME")
+                        password = findProperty("nexusPassword") as String? ?: System.getenv("NEXUS_PASSWORD")
                     }
                 }
             }
