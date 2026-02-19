@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to you under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<Root>
+  <TestCase name="testQ9">
+    <Resource name="suggestion_0">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+  LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
+    LogicalFilter(condition=[SEARCH($10, Sarg[[1..20]])])
+      LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_1">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+  LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
+    LogicalFilter(condition=[SEARCH($10, Sarg[[21..40]])])
+      LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_2">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+  LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
+    LogicalFilter(condition=[SEARCH($10, Sarg[[41..60]])])
+      LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_3">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+  LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
+    LogicalFilter(condition=[SEARCH($10, Sarg[[61..80]])])
+      LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_4">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+  LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
+    LogicalFilter(condition=[SEARCH($10, Sarg[[81..100]])])
+      LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_5">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($1)], EXPR$0=[AVG($10)], EXPR$0=[AVG($11)], EXPR$0=[AVG($13)], EXPR$0=[AVG($14)], EXPR$0=[AVG($2)], EXPR$0=[AVG($4)], EXPR$0=[AVG($5)], EXPR$0=[AVG($7)], EXPR$0=[AVG($8)], EXPR$0=[COUNT($0)], EXPR$0=[COUNT($12)], EXPR$0=[COUNT($3)], EXPR$0=[COUNT($6)], EXPR$0=[COUNT($9)])
+  LogicalProject($f0=[CASE(SEARCH($10, Sarg[[1..20]]), 1, null:INTEGER)], $f1=[CASE(SEARCH($10, Sarg[[1..20]]), $15, null:DECIMAL(7, 2))], $f2=[CASE(SEARCH($10, Sarg[[1..20]]), $20, null:DECIMAL(7, 2))], $f3=[CASE(SEARCH($10, Sarg[[21..40]]), 1, null:INTEGER)], $f4=[CASE(SEARCH($10, Sarg[[21..40]]), $15, null:DECIMAL(7, 2))], $f5=[CASE(SEARCH($10, Sarg[[21..40]]), $20, null:DECIMAL(7, 2))], $f6=[CASE(SEARCH($10, Sarg[[41..60]]), 1, null:INTEGER)], $f7=[CASE(SEARCH($10, Sarg[[41..60]]), $15, null:DECIMAL(7, 2))], $f8=[CASE(SEARCH($10, Sarg[[41..60]]), $20, null:DECIMAL(7, 2))], $f9=[CASE(SEARCH($10, Sarg[[61..80]]), 1, null:INTEGER)], $f10=[CASE(SEARCH($10, Sarg[[61..80]]), $15, null:DECIMAL(7, 2))], $f11=[CASE(SEARCH($10, Sarg[[61..80]]), $20, null:DECIMAL(7, 2))], $f12=[CASE(SEARCH($10, Sarg[[81..100]]), 1, null:INTEGER)], $f13=[CASE(SEARCH($10, Sarg[[81..100]]), $15, null:DECIMAL(7, 2))], $f14=[CASE(SEARCH($10, Sarg[[81..100]]), $20, null:DECIMAL(7, 2))])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_6">
+      <![CDATA[LogicalFilter(condition=[SEARCH($10, Sarg[[1..20], [21..40], [41..60], [61..80], [81..100]])])
+  LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+  </TestCase>
+</Root>

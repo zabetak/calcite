@@ -20,8 +20,8 @@
     <Resource name="suggestion_0">
       <![CDATA[LogicalAggregate(group=[{0}], CNT=[COUNT()])
   LogicalProject(ENAME=[$1])
-    LogicalFilter(condition=[=($4, 'Sales')])
-      LogicalJoin(condition=[=($2, $3)], joinType=[inner])
+    LogicalFilter(condition=[=($5, 'Sales')])
+      LogicalJoin(condition=[=($2, $4)], joinType=[inner])
         LogicalTableScan(table=[[EMP]])
         LogicalTableScan(table=[[DEPT]])
 ]]>
@@ -53,9 +53,9 @@
   </TestCase>
   <TestCase name="testSuggestReturnsCommonProjectFilterJoinTableScan">
     <Resource name="suggestion_0">
-      <![CDATA[LogicalProject(EMPNO=[$0], DNAME=[$4])
-  LogicalFilter(condition=[=($4, 'Sales')])
-    LogicalJoin(condition=[=($2, $3)], joinType=[inner])
+      <![CDATA[LogicalProject(EMPNO=[$0], DNAME=[$5])
+  LogicalFilter(condition=[=($5, 'Sales')])
+    LogicalJoin(condition=[=($2, $4)], joinType=[inner])
       LogicalTableScan(table=[[EMP]])
       LogicalTableScan(table=[[DEPT]])
 ]]>
@@ -71,8 +71,8 @@
   </TestCase>
   <TestCase name="testSuggestReturnsCommonProjectJoinTableScan">
     <Resource name="suggestion_0">
-      <![CDATA[LogicalProject(EMPNO=[$0], DNAME=[$4])
-  LogicalJoin(condition=[=($2, $3)], joinType=[inner])
+      <![CDATA[LogicalProject(EMPNO=[$0], DNAME=[$5])
+  LogicalJoin(condition=[=($2, $4)], joinType=[inner])
     LogicalTableScan(table=[[EMP]])
     LogicalTableScan(table=[[DEPT]])
 ]]>
