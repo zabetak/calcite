@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.AggregateFilterToConditionalAggregateRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -51,6 +52,9 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
 
   @Override public List<RelNode> suggest(RelNode input, @Nullable Context context) {
     HepProgramBuilder b = new HepProgramBuilder();
+    b.addRuleCollection(
+        Arrays.asList(CoreRules.PROJECT_MERGE, CoreRules.FILTER_PROJECT_TRANSPOSE,
+        CoreRules.AGGREGATE_PROJECT_MERGE));
     b.addRuleCollection(
         Arrays.asList(AggregateFilterScanRegisterRule.Config.DEFAULT.toRule(),
         AggregateFilterToConditionalAggregateRule.Config.DEFAULT.toRule(),

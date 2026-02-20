@@ -18,35 +18,35 @@
 <Root>
   <TestCase name="testQ9">
     <Resource name="suggestion_0">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)])
   LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
     LogicalFilter(condition=[SEARCH($10, Sarg[[1..20]])])
       LogicalTableScan(table=[[STORE_SALES]])
 ]]>
     </Resource>
     <Resource name="suggestion_1">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)])
   LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
     LogicalFilter(condition=[SEARCH($10, Sarg[[21..40]])])
       LogicalTableScan(table=[[STORE_SALES]])
 ]]>
     </Resource>
     <Resource name="suggestion_2">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)])
   LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
     LogicalFilter(condition=[SEARCH($10, Sarg[[41..60]])])
       LogicalTableScan(table=[[STORE_SALES]])
 ]]>
     </Resource>
     <Resource name="suggestion_3">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)])
   LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
     LogicalFilter(condition=[SEARCH($10, Sarg[[61..80]])])
       LogicalTableScan(table=[[STORE_SALES]])
 ]]>
     </Resource>
     <Resource name="suggestion_4">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT()])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)])
   LogicalProject(SS_EXT_SALES_PRICE=[$15], SS_NET_PAID=[$20])
     LogicalFilter(condition=[SEARCH($10, Sarg[[81..100]])])
       LogicalTableScan(table=[[STORE_SALES]])
@@ -59,6 +59,36 @@
 ]]>
     </Resource>
     <Resource name="suggestion_6">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[SEARCH($10, Sarg[[1..20]])])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_7">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[SEARCH($10, Sarg[[21..40]])])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_8">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[SEARCH($10, Sarg[[41..60]])])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_9">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[SEARCH($10, Sarg[[61..80]])])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_10">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[SEARCH($10, Sarg[[81..100]])])
+    LogicalTableScan(table=[[STORE_SALES]])
+]]>
+    </Resource>
+    <Resource name="suggestion_11">
       <![CDATA[LogicalFilter(condition=[SEARCH($10, Sarg[[1..20], [21..40], [41..60], [61..80], [81..100]])])
   LogicalTableScan(table=[[STORE_SALES]])
 ]]>

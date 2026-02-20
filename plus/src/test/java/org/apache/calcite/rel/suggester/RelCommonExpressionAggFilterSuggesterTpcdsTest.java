@@ -42,7 +42,7 @@ class RelCommonExpressionAggFilterSuggesterTpcdsTest {
 
   private static RelSuggesterFixture query(int num) {
     String sql = getResourceAsString(inputSqlFile(num));
-    return fixture().withSubQueryRules().withRules(CoreRules.AGGREGATE_PROJECT_MERGE).withSql(sql);
+    return fixture().withSubQueryRules().withRules(CoreRules.PROJECT_FILTER_TRANSPOSE).withSql(sql);
   }
 
   @Test void testQ9() {
