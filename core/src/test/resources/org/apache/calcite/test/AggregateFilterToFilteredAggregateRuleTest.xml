@@ -16,26 +16,19 @@
   ~ limitations under the License.
   -->
 <Root>
-  <TestCase name="testCountStarAggregateWithFilter">
+  <TestCase name="testAggregateNoSupportingFilter">
     <Resource name="sql">
-      <![CDATA[select count(*) from emp where deptno = 10]]>
+      <![CDATA[select single_value(sal) from emp where deptno = 10]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+LogicalAggregate(group=[{}], EXPR$0=[SINGLE_VALUE($5)])
   LogicalFilter(condition=[=($7, 10)])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
-    <Resource name="planAfter">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[COUNT($0)])
-  LogicalProject($f0=[CASE(=($7, 10), 1, null:INTEGER)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
   </TestCase>
-  <TestCase name="testMultiAggregatesWithFilter">
+  <TestCase name="testMultiAggregates">
     <Resource name="sql">
       <![CDATA[select sum(sal), min(sal), max(sal), count(*) from emp where deptno = 10]]>
     </Resource>
@@ -48,63 +41,13 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($5)], EXPR$1=[MIN($5)], EXPR$2=[MAX($5)
     </Resource>
     <Resource name="planAfter">
       <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($0)], EXPR$1=[MIN($0)], EXPR$2=[MAX($0)], EXPR$3=[COUNT($1)])
-  LogicalProject($f0=[CASE(=($7, 10), $5, null:INTEGER)], $f1=[CASE(=($7, 10), 1, null:INTEGER)])
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1], EXPR$1=[MIN($0) FILTER $1], EXPR$2=[MAX($0) FILTER $1], EXPR$3=[COUNT() FILTER $1])
+  LogicalProject(SAL=[$5], $f9=[=($7, 10)])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testNullAwareAggregateWithFilter">
-    <Resource name="sql">
-      <![CDATA[select null_aware_sum(sal) from emp where deptno = 10]]>
-    </Resource>
-    <Resource name="planBefore">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[NULL_AWARE_SUM($5)])
-  LogicalFilter(condition=[=($7, 10)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-  </TestCase>
-  <TestCase name="testSumAggregateWithEmptyGroupByAndFilter">
-    <Resource name="sql">
-      <![CDATA[select sum(sal) from emp where deptno = 10 group by ()]]>
-    </Resource>
-    <Resource name="planBefore">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($5)])
-  LogicalFilter(condition=[=($7, 10)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-    <Resource name="planAfter">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
-  LogicalProject($f0=[CASE(=($7, 10), $5, null:INTEGER)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-  </TestCase>
-  <TestCase name="testSumAggregateWithEmptyGroupingSetsAndFilter">
-    <Resource name="sql">
-      <![CDATA[select sum(sal) from emp where deptno = 10 group by grouping sets (())]]>
-    </Resource>
-    <Resource name="planBefore">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($5)])
-  LogicalFilter(condition=[=($7, 10)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-    <Resource name="planAfter">
-      <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
-  LogicalProject($f0=[CASE(=($7, 10), $5, null:INTEGER)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-  </TestCase>
-  <TestCase name="testSumAggregateWithFilter">
+  <TestCase name="testSingleColumnAggregate">
     <Resource name="sql">
       <![CDATA[select sum(sal) from emp where deptno = 10]]>
     </Resource>
@@ -117,13 +60,51 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($5)])
     </Resource>
     <Resource name="planAfter">
       <![CDATA[
-LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
-  LogicalProject($f0=[CASE(=($7, 10), $5, null:INTEGER)])
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f9=[=($7, 10)])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testSumAggregateWithGroupByOnColumnAndFilter">
+  <TestCase name="testSingleColumnAggregateWithEmptyGroupBy">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) from emp where deptno = 10 group by ()]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($5)])
+  LogicalFilter(condition=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f9=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSingleColumnAggregateWithEmptyGroupingSets">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) from emp where deptno = 10 group by grouping sets (())]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($5)])
+  LogicalFilter(condition=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f9=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSingleColumnAggregateWithGroupBy">
     <Resource name="sql">
       <![CDATA[select sum(sal) from emp where deptno = 10 group by job]]>
     </Resource>
@@ -136,7 +117,7 @@ LogicalProject(EXPR$0=[$1])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testSumAggregateWithGroupingSetsAndFilter">
+  <TestCase name="testSingleColumnAggregateWithGroupingSets">
     <Resource name="sql">
       <![CDATA[select sum(sal) from emp where deptno = 10 group by grouping sets ((job), (ename))]]>
     </Resource>
@@ -147,6 +128,45 @@ LogicalProject(EXPR$0=[$2])
     LogicalAggregate(group=[{1, 2}], groups=[[{1}, {2}]], EXPR$0=[SUM($5)])
       LogicalFilter(condition=[=($7, 10)])
         LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSingleColumnFilteredAggregate">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) filter (where ename = 'Bob') from emp where deptno = 10]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $2])
+  LogicalFilter(condition=[=($1, 10)])
+    LogicalProject(SAL=[$5], DEPTNO=[$7], $f2=[=($1, 'Bob')])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f3=[AND(=($1, 'Bob'), =($7, 10))])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSingleStarAggregate">
+    <Resource name="sql">
+      <![CDATA[select count(*) from emp where deptno = 10]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalFilter(condition=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[COUNT() FILTER $0])
+  LogicalProject($f9=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>

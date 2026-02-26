@@ -25,7 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.rules.AggregateFilterToConditionalAggregateRule;
+import org.apache.calcite.rel.rules.AggregateFilterToFilteredAggregateRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
@@ -57,7 +57,7 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
         CoreRules.AGGREGATE_PROJECT_MERGE));
     b.addRuleCollection(
         Arrays.asList(AggregateFilterScanRegisterRule.Config.DEFAULT.toRule(),
-        AggregateFilterToConditionalAggregateRule.Config.DEFAULT.toRule(),
+        AggregateFilterToFilteredAggregateRule.Config.DEFAULT.toRule(),
         AggregateProjectScanRegisterRule.Config.DEFAULT.toRule()));
     ScanRegistry sr = new ScanRegistry();
     HepPlanner planner = new HepPlanner(b.build(), Contexts.of(sr));
