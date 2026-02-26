@@ -29,12 +29,12 @@ import org.apache.calcite.rel.rules.AggregateFilterToFilteredAggregateRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBitSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,35 +79,27 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
         builder.clear();
         builder.push(scan);
         builder.filter(key);
-        ImmutableBitSet groupSet = ImmutableBitSet.of();
         Set<AggregateCall> aggCalls = new HashSet<>();
         List<RexNode> projects = new ArrayList<>();
         for (ScanRegistry.NodeInfo nodeInfo : value) {
-          // TODO Decide what to do about the groupSets
-          ImmutableBitSet.Builder newGroupSet = ImmutableBitSet.builder();
-          for (int groupKey : nodeInfo.groupSet) {
-            RexNode p = nodeInfo.project.get(groupKey);
-            int ix = projects.indexOf(p);
-            if (ix < 0) {
-              ix = projects.size();
-              projects.add(p);
-            }
-            newGroupSet.set(ix);
+          // Currently we only handle empty group sets.
+          if (!nodeInfo.groupSet.isEmpty()) {
+            continue;
           }
-          // TODO Do we want the union or something smarter?
-          groupSet = groupSet.union(newGroupSet.build());
+          // TODO: Handle remapping with Mappings class
           for (AggregateCall c : nodeInfo.aggCalls) {
             List<Integer> remappedArgs = new ArrayList<>();
             for (int i : c.getArgList()) {
               RexNode p = nodeInfo.project.get(i);
-              int ix = projects.indexOf(p);
-              if (ix < 0) {
-                ix = projects.size();
-                projects.add(p);
-              }
+              int ix = addExpression(p, projects);
               remappedArgs.add(ix);
             }
-            aggCalls.add(c.withArgList(remappedArgs));
+            int filterArg = -1;
+            if (c.hasFilter()) {
+              RexNode p = nodeInfo.project.get(c.filterArg);
+              filterArg = addExpression(p, projects);
+            }
+            aggCalls.add(c.withArgList(remappedArgs).withFilter(filterArg));
           }
         }
         if (!projects.isEmpty()) {
@@ -118,7 +110,7 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
         List<AggregateCall> sortedAggCalls =
             aggCalls.stream().sorted(Comparator.comparing(AggregateCall::toString))
                 .collect(Collectors.toList());
-        builder.aggregate(builder.groupKey(groupSet), sortedAggCalls);
+        builder.aggregate(builder.groupKey(), sortedAggCalls);
         addSuggestion(builder.build());
       });
       // Create a big disjunctive filter over the table scan
@@ -126,11 +118,22 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
       builder.push(scan);
       List<RexNode> interestingFilters = new ArrayList<>(filterToAggregate.keySet());
       interestingFilters.removeIf(RexNode::isAlwaysTrue);
+      // Sort the filters for stability of the generated suggestions
+      Collections.sort(interestingFilters, Comparator.comparing(RexNode::toString));
       builder.filter(builder.or(interestingFilters));
       addSuggestion(builder.build());
       // TODO: Check if we want to have the conditional aggregate with big disjunctive filter
     });
     return suggestions;
+  }
+
+  private static int addExpression(RexNode x, List<RexNode> expressions) {
+    int index = expressions.indexOf(x);
+    if (index < 0) {
+      index = expressions.size();
+      expressions.add(x);
+    }
+    return index;
   }
 
   private void addSuggestion(RelNode rel) {

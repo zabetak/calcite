@@ -32,8 +32,8 @@
 ]]>
     </Resource>
     <Resource name="suggestion_2">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($1)], EXPR$0=[AVG($3)], EXPR$0=[COUNT($0)], EXPR$0=[COUNT($2)], EXPR$0=[MAX($3)], EXPR$0=[MIN($1)])
-  LogicalProject($f0=[CASE(SEARCH($2, Sarg[[1..20]]), 1, null:INTEGER)], $f1=[CASE(SEARCH($2, Sarg[[1..20]]), $3, null:INTEGER)], $f2=[CASE(SEARCH($2, Sarg[[21..40]]), 1, null:INTEGER)], $f3=[CASE(SEARCH($2, Sarg[[21..40]]), $3, null:INTEGER)])
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($1) FILTER $0], EXPR$0=[AVG($1) FILTER $2], EXPR$0=[COUNT() FILTER $0], EXPR$0=[COUNT() FILTER $2], EXPR$0=[MAX($1) FILTER $2], EXPR$0=[MIN($1) FILTER $0])
+  LogicalProject($f0=[SEARCH($2, Sarg[[1..20]])], SAL=[$3], $f2=[SEARCH($2, Sarg[[21..40]])])
     LogicalTableScan(table=[[EMP]])
 ]]>
     </Resource>

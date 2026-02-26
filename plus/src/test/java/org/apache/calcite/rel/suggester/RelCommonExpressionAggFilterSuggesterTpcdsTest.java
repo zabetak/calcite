@@ -49,6 +49,10 @@ class RelCommonExpressionAggFilterSuggesterTpcdsTest {
     query(9).withSubQueryRules().checkSuggestions();
   }
 
+  @Test void testQ28() {
+    query(28).withSubQueryRules().checkSuggestions();
+  }
+
   private static String inputSqlFile(int query) {
     return String.format(Locale.getDefault(), "sql/tpcds/%02d.sql", query);
   }
