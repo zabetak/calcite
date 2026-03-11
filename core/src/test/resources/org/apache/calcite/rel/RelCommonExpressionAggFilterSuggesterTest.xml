@@ -18,23 +18,24 @@
 <Root>
   <TestCase name="testPattern1">
     <Resource name="suggestion_0">
+      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[AVG($1)], EXPR$0=[COUNT($2)], EXPR$0=[COUNT($3)], EXPR$0=[MAX($4)], EXPR$0=[MIN($5)])
+  LogicalProject($f3=[CASE(SEARCH($2, Sarg[[1..20]]), $3, null:INTEGER)], $f4=[CASE(SEARCH($2, Sarg[[21..40]]), $3, null:INTEGER)], $f5=[CASE(SEARCH($2, Sarg[[1..20]]), 0, null:INTEGER)], $f6=[CASE(SEARCH($2, Sarg[[21..40]]), 0, null:INTEGER)], $f7=[CASE(SEARCH($2, Sarg[[21..40]]), $3, null:INTEGER)], $f8=[CASE(SEARCH($2, Sarg[[1..20]]), $3, null:INTEGER)])
+    LogicalFilter(condition=[SEARCH($2, Sarg[[1..20], [21..40]])])
+      LogicalTableScan(table=[[EMP]])
+]]>
+    </Resource>
+    <Resource name="suggestion_1">
       <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[COUNT()], EXPR$0=[MAX($0)])
   LogicalProject(SAL=[$3])
     LogicalFilter(condition=[SEARCH($2, Sarg[[21..40]])])
       LogicalTableScan(table=[[EMP]])
 ]]>
     </Resource>
-    <Resource name="suggestion_1">
+    <Resource name="suggestion_2">
       <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($0)], EXPR$0=[COUNT()], EXPR$0=[MIN($0)])
   LogicalProject(SAL=[$3])
     LogicalFilter(condition=[SEARCH($2, Sarg[[1..20]])])
       LogicalTableScan(table=[[EMP]])
-]]>
-    </Resource>
-    <Resource name="suggestion_2">
-      <![CDATA[LogicalAggregate(group=[{}], EXPR$0=[AVG($1) FILTER $0], EXPR$0=[AVG($1) FILTER $2], EXPR$0=[COUNT() FILTER $0], EXPR$0=[COUNT() FILTER $2], EXPR$0=[MAX($1) FILTER $2], EXPR$0=[MIN($1) FILTER $0])
-  LogicalProject($f0=[SEARCH($2, Sarg[[1..20]])], SAL=[$3], $f2=[SEARCH($2, Sarg[[21..40]])])
-    LogicalTableScan(table=[[EMP]])
 ]]>
     </Resource>
     <Resource name="suggestion_3">

@@ -19,6 +19,7 @@ package org.apache.calcite.rel.suggester;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelCommonExpressionSuggester;
 import org.apache.calcite.rel.RelNode;
@@ -142,6 +143,12 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
   }
 
   private void addSuggestion(RelNode rel) {
-    suggestions.add(rel);
+    // Post-processing to convert the generated suggestions to a form that is more likely to
+    // be supported by different engines (e.g. Impala).
+    HepProgram program =
+        new HepProgramBuilder().addRuleInstance(CoreRules.AGGREGATE_FILTER_TO_CASE).build();
+    HepPlanner planner = new HepPlanner(program);
+    planner.setRoot(rel);
+    suggestions.add(planner.findBestExp());
   }
 }
