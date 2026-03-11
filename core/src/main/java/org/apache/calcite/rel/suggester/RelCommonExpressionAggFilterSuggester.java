@@ -81,6 +81,7 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
         builder.filter(key);
         Set<AggregateCall> aggCalls = new HashSet<>();
         List<RexNode> projects = new ArrayList<>();
+        List<RexNode> filters = new ArrayList<>();
         for (ScanRegistry.NodeInfo nodeInfo : value) {
           // Currently we only handle empty group sets.
           if (!nodeInfo.groupSet.isEmpty()) {
@@ -97,10 +98,14 @@ public class RelCommonExpressionAggFilterSuggester implements RelCommonExpressio
             int filterArg = -1;
             if (c.hasFilter()) {
               RexNode p = nodeInfo.project.get(c.filterArg);
+              filters.add(p);
               filterArg = addExpression(p, projects);
             }
             aggCalls.add(c.withArgList(remappedArgs).withFilter(filterArg));
           }
+        }
+        if (!filters.isEmpty()) {
+          builder.filter(builder.or(filters));
         }
         if (!projects.isEmpty()) {
           builder.project(projects);
