@@ -1,0 +1,71 @@
+<?xml version="1.0" ?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to you under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<Root>
+  <TestCase name="testMixNormalAndFilteredAggregates">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) filter (where deptno = 10), avg(sal) filter (where deptno = 20), count(*) from emp]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1], EXPR$1=[AVG($0) FILTER $2], EXPR$2=[COUNT()])
+  LogicalProject(SAL=[$5], $f1=[=($7, 10)], $f2=[=($7, 20)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMultipleFilteredAggregates">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) filter (where deptno = 10), avg(sal) filter (where deptno = 20) from emp]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1], EXPR$1=[AVG($0) FILTER $2])
+  LogicalProject(SAL=[$5], $f1=[=($7, 10)], $f2=[=($7, 20)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1], EXPR$1=[AVG($0) FILTER $2])
+  LogicalProject(SAL=[$5], $f1=[=($7, 10)], $f2=[=($7, 20)])
+    LogicalFilter(condition=[OR(=($7, 10), =($7, 20))])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testSingleFilteredAggregate">
+    <Resource name="sql">
+      <![CDATA[select sum(sal) filter (where deptno = 10) from emp]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f1=[=($7, 10)])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{}], EXPR$0=[SUM($0) FILTER $1])
+  LogicalProject(SAL=[$5], $f1=[=($7, 10)])
+    LogicalFilter(condition=[=($7, 10)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+</Root>

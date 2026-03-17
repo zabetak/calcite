@@ -964,6 +964,10 @@ public class CoreRules {
       AGGREGATE_FILTER_TO_FILTERED_AGGREGATE =
       AggregateFilterToFilteredAggregateRule.Config.DEFAULT.toRule();
 
+  /** Rule that extracts a filter from a filtered aggregate. */
+  public static final AggregateExtractFilterRule AGGREGATE_EXTRACT_FILTER =
+      AggregateExtractFilterRule.Config.DEFAULT.toRule();
+
   /** Rule that remove duplicate {@link Sort} keys. */
   public static final SortRemoveDuplicateKeysRule SORT_REMOVE_DUPLICATE_KEYS =
       SortRemoveDuplicateKeysRule.Config.DEFAULT.toRule();
