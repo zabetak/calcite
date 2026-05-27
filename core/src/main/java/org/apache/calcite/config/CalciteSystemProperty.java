@@ -155,6 +155,14 @@ public final class CalciteSystemProperty<T> {
       booleanProperty("calcite.disable.generate.rel.data.type.digest.string", false);
 
   /**
+   * A comma-separated list of allowed paths that can be accessed by the
+   * files function of the OS adapter. By default, only paths under the working
+   * directory of the JVM process can be passed as a parameter to the function.
+   */
+  public static final CalciteSystemProperty<String> ADAPTER_OS_FILES_ROOTS_ALLOWED =
+      stringProperty("calcite.adapter.os.files.roots.allowed", ".");
+
+  /**
    * Whether to run integration tests.
    */
   // TODO review zabetak:

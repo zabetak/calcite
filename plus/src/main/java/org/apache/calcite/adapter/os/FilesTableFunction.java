@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.os;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -44,6 +45,8 @@ import static java.util.Objects.requireNonNull;
 public class FilesTableFunction {
 
   private static final BigDecimal THOUSAND = BigDecimal.valueOf(1000L);
+  private static final FilesPathValidator PATH_VALIDATOR =
+      FilesPathValidator.parse(CalciteSystemProperty.ADAPTER_OS_FILES_ROOTS_ALLOWED.value());
 
   private FilesTableFunction() {
   }
@@ -89,25 +92,12 @@ public class FilesTableFunction {
       /** Wraps {@code path} in single quotes for use in a shell command,
        * throwing if it contains a single quote. */
       private String quotePath() {
-        return "'" + validatePath(path) + "'";
-      }
-
-      /** Checks that {@code path} is valid and will not cause mischief. */
-      private String validatePath(String path) {
-        if (path.contains("'")) {
-          throw new IllegalArgumentException(
-              "Path with single quote characters is not supported");
-        }
-        if (path.startsWith("-")) {
-          throw new IllegalArgumentException(
-              "Path with leading dash character is not supported");
-        }
-        return path;
+        return "'" + PATH_VALIDATOR.check(path) + "'";
       }
 
       private Enumerable<String> sourceLinux() {
         final String[] args = {
-            "find", "--", validatePath(path), "-printf", ""
+            "find", "--", PATH_VALIDATOR.check(path), "-printf", ""
               + "%A@\\0" // access_time
               + "%b\\0" // block_count
               + "%C@\\0" // change_time

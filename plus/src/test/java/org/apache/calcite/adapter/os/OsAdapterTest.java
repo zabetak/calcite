@@ -38,6 +38,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -163,6 +166,32 @@ class OsAdapterTest {
     assumeFalse(Util.isWindows(), "Skip: the 'files' table does not work on Windows");
     sql("select * from files('-name')")
         .throws_("Path with leading dash character is not supported");
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-7552">[CALCITE-7552]
+   * Add path validator for files in OS adapter</a>.
+   */
+  @Test void testFilesWithAllowedPath() throws IOException {
+    assumeFalse(Util.isWindows(), "Skip: the 'files' table does not work on Windows");
+    Path dir = Files.createTempDirectory(Paths.get("build", "tmp"), "os-adapter-test-");
+    Files.createFile(dir.resolve("f1.txt"));
+    Files.createFile(dir.resolve("f2.txt"));
+    sql("select file_name from files('" + dir.toAbsolutePath() + "')")
+        .returnsUnordered(
+            "file_name=f1.txt",
+            "file_name=f2.txt",
+            "file_name=" + dir.getFileName().toString());
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-7552">[CALCITE-7552]
+   * Add path validator for files in OS adapter</a>.
+   */
+  @Test void testFilesWithDisallowedPath() throws IOException {
+    assumeFalse(Util.isWindows(), "Skip: the 'files' table does not work on Windows");
+    sql("select file_name from files('" + Paths.get("/tmp").toAbsolutePath() + "')")
+        .throws_("Path is not under any of the allowed roots");
   }
 
   @Test void testPs() {
