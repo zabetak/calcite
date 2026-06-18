@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.avatica.Plugin;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -18073,7 +18074,7 @@ public class SqlOperatorTest {
      * field as the {@link CalciteConnectionProperty#TYPE_SYSTEM} property,
      * and any connection you make in the same thread will use your type
      * system. */
-    public static final TryThreadLocal<RelDataTypeSystem> THREAD_TYPE_SYSTEM =
+    @Plugin public static final TryThreadLocal<RelDataTypeSystem> THREAD_TYPE_SYSTEM =
         TryThreadLocal.of(RelDataTypeSystem.DEFAULT);
 
     private static final Field FIELD =
