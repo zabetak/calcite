@@ -88,6 +88,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -380,6 +382,11 @@ public class SqlOperatorTest {
   }
 
   //--- Tests -----------------------------------------------------------
+
+  @BeforeEach void skipTestForLatestAvatica() {
+    Assumptions.assumeFalse("1.0.0-dev-main-SNAPSHOT".equals(TestUtil.AVATICA_VERSION.string),
+        "[CALCITE-7610] Skip tests on latest Avatica main");
+  }
 
   @Test void testSqlOperatorOverloading() {
     final SqlStdOperatorTable operatorTable = SqlStdOperatorTable.instance();
